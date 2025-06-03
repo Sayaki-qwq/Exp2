@@ -3,7 +3,12 @@
     <h1>游戏商店</h1>
     
     <div class="game-grid">
-      <div v-for="game in gameStore.games" :key="game.id" class="game-card">
+      <div 
+        v-for="game in gameStore.games" 
+        :key="game.id" 
+        class="game-card"
+        @click="navigateToGameDetail(game.id)"
+      >
         <div class="game-image">
           <img :src="game.imageUrl" :alt="game.title">
         </div>
@@ -19,7 +24,7 @@
             <div class="game-actions">
               <button 
                 v-if="!gameStore.isInLibrary(game.id)" 
-                @click="gameStore.addToCart(game)" 
+                @click.stop="gameStore.addToCart(game)" 
                 class="btn-add-cart"
                 :disabled="gameStore.isInCart(game.id)"
               >
@@ -36,15 +41,22 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
+import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
 
 export default defineComponent({
   name: 'StoreView',
   setup() {
     const gameStore = useGameStore()
+    const router = useRouter()
+    
+    const navigateToGameDetail = (gameId: number) => {
+      router.push(`/game/${gameId}`)
+    }
     
     return {
-      gameStore
+      gameStore,
+      navigateToGameDetail
     }
   }
 })
@@ -68,6 +80,7 @@ export default defineComponent({
   overflow: hidden;
   transition: transform 0.3s;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 }
 
 .game-card:hover {
@@ -97,7 +110,6 @@ export default defineComponent({
 }
 
 .game-description {
-  margin: 1rem 0;
   font-size: 0.9rem;
   color: #c7d5e0;
   line-height: 1.4;

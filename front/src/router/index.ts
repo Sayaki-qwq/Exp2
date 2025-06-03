@@ -4,6 +4,7 @@ import MainLayout from '@/components/layout/MainLayout.vue'
 import StoreView from '@/views/StoreView.vue'
 import CartView from '@/views/CartView.vue'
 import LibraryView from '@/views/LibraryView.vue'
+import GameDetailView from '@/views/GameDetailView.vue'
 
 const routes = [
   {
@@ -17,6 +18,10 @@ const routes = [
       {
         path: 'store',
         component: StoreView
+      },
+      {
+        path: 'game/:id',
+        component: GameDetailView
       },
       {
         path: 'cart',
