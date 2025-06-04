@@ -8,6 +8,7 @@ export interface User {
   username: string
   email: string
   token?: string
+  is_admin?: boolean
 }
 
 export const useUserStore = defineStore('user', () => {
@@ -21,6 +22,9 @@ export const useUserStore = defineStore('user', () => {
   
   // 计算属性：是否已登录
   const isLoggedIn = computed(() => !!currentUser.value)
+  
+  // 计算属性：是否是管理员
+  const isAdmin = computed(() => !!currentUser.value?.is_admin)
   
   // 初始化：从localStorage加载用户信息
   function initUser() {
@@ -45,13 +49,19 @@ export const useUserStore = defineStore('user', () => {
     
     try {
       const response = await axios.post(`${apiBaseUrl}/login`, { username, password })
-      currentUser.value = response.data.user
+      const { user, token } = response.data
       
-      // 保存token
-      if (response.data.token && currentUser.value) {
-        currentUser.value.token = response.data.token
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+      // 保存用户信息，包括管理员状态
+      currentUser.value = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        is_admin: user.is_admin,
+        token: token
       }
+      
+      // 设置Authorization头
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       
       // 保存到localStorage
       localStorage.setItem('user', JSON.stringify(currentUser.value))
@@ -97,6 +107,7 @@ export const useUserStore = defineStore('user', () => {
     isLoading,
     error,
     isLoggedIn,
+    isAdmin,
     initUser,
     login,
     register,

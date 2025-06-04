@@ -27,63 +27,33 @@ export const useGameStore = defineStore('game', () => {
   const apiBaseUrl = 'http://localhost:5000/api'
   
   // 游戏列表数据
-  const games = ref<Game[]>([
-    {
-      id: 1,
-      title: '赛博朋克2077',
-      description: '一款开放世界动作冒险RPG游戏，故事发生在夜之城，一个由权力、魅力和身体改造痴迷的人所统治的巨型都市。',
-      type: 'RPG',
-      releaseDate: '2020-12-10',
-      price: 298,
-      developer: 'CD Projekt Red',
-      publisher: 'CD Projekt',
-      imageUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg'
-    },
-    {
-      id: 2,
-      title: '艾尔登法环',
-      description: '一款由FromSoftware开发的动作角色扮演游戏，由《黑暗之魂》系列的宫崎英高和奇幻作家乔治·R·R·马丁共同创作。',
-      type: '动作角色扮演',
-      releaseDate: '2022-02-25',
-      price: 298,
-      developer: 'FromSoftware',
-      publisher: 'Bandai Namco Entertainment',
-      imageUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg'
-    },
-    {
-      id: 3,
-      title: '荒野大镖客：救赎2',
-      description: '一款由Rockstar Games开发的西部题材动作冒险游戏，是2010年《荒野大镖客：救赎》的前传。',
-      type: '动作冒险',
-      releaseDate: '2018-10-26',
-      price: 249,
-      developer: 'Rockstar Games',
-      publisher: 'Rockstar Games',
-      imageUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/1174180/header.jpg'
-    },
-    {
-      id: 4,
-      title: '巫师3：狂猎',
-      description: '一款由CD Projekt RED开发的动作角色扮演游戏，基于安杰伊·萨普科夫斯基的奇幻小说系列《巫师》改编。',
-      type: 'RPG',
-      releaseDate: '2015-05-19',
-      price: 127,
-      developer: 'CD Projekt Red',
-      publisher: 'CD Projekt',
-      imageUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg'
-    },
-    {
-      id: 5,
-      title: '半条命：Alyx',
-      description: 'Valve开发的VR第一人称射击游戏，是《半条命》系列的最新作品。',
-      type: 'VR射击',
-      releaseDate: '2020-03-23',
-      price: 149,
-      developer: 'Valve',
-      publisher: 'Valve',
-      imageUrl: 'https://cdn.akamai.steamstatic.com/steam/apps/546560/header.jpg'
+  const games = ref<Game[]>([])
+  
+  // 加载游戏列表
+  async function loadGames() {
+    try {
+      const config = userStore.currentUser?.token ? {
+        headers: {
+          'Authorization': `Bearer ${userStore.currentUser.token}`
+        }
+      } : {}
+      
+      const response = await axios.get(`${apiBaseUrl}/games`, config)
+      games.value = response.data.map((game: any) => ({
+        id: game.id,
+        title: game.title,
+        description: game.description,
+        type: game.type,
+        releaseDate: game.release_date || '',  // 使用后端返回的格式化日期
+        price: game.price,
+        developer: game.developer,
+        publisher: game.publisher,
+        imageUrl: game.image_url
+      }))
+    } catch (error) {
+      console.error('加载游戏列表失败', error)
     }
-  ])
+  }
 
   // 购物车数据
   const cartItems = ref<CartItem[]>([])
@@ -249,6 +219,7 @@ export const useGameStore = defineStore('game', () => {
     libraryGames,
     cartTotal,
     cartCount,
+    loadGames,
     loadUserCart,
     loadUserLibrary,
     addToCart,

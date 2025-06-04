@@ -7,13 +7,19 @@
           <router-link to="/cart" class="nav-item">购物车</router-link>
           <router-link to="/store" class="nav-item">商店</router-link>
           <router-link to="/library" class="nav-item">游戏库</router-link>
+          <router-link v-if="userStore.isAdmin" to="/admin" class="nav-item admin">管理</router-link>
         </nav>
       </div>
       <div class="user-actions">
         <template v-if="userStore.isLoggedIn">
           <div class="user-dropdown">
-            <button class="btn-user-menu">{{ userStore.currentUser?.username }} ▼</button>
+            <button class="btn-user-menu">
+              {{ userStore.currentUser?.username }}
+              <span v-if="userStore.isAdmin" class="admin-badge">管理员</span>
+              ▼
+            </button>
             <div class="dropdown-menu">
+              <router-link v-if="userStore.isAdmin" to="/admin" class="dropdown-item">管理页面</router-link>
               <button @click="handleLogout" class="dropdown-item">登出</button>
             </div>
           </div>
@@ -150,6 +156,15 @@ export default defineComponent({
   color: white;
 }
 
+.nav-item.admin {
+  background-color: #b12020;
+  color: white;
+}
+
+.nav-item.admin:hover {
+  background-color: #d42626;
+}
+
 .user-actions {
   display: flex;
   gap: 1rem;
@@ -203,6 +218,15 @@ export default defineComponent({
   font-size: 0.9rem;
 }
 
+.admin-badge {
+  background-color: #b12020;
+  color: white;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
 .dropdown-menu {
   position: absolute;
   top: 100%;
@@ -229,6 +253,7 @@ export default defineComponent({
   color: #c7d5e0;
   cursor: pointer;
   font-size: 0.9rem;
+  text-decoration: none;
 }
 
 .dropdown-item:hover {

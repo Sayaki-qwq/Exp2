@@ -40,7 +40,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
 
@@ -49,6 +49,11 @@ export default defineComponent({
   setup() {
     const gameStore = useGameStore()
     const router = useRouter()
+    
+    // 在组件挂载时加载游戏数据
+    onMounted(async () => {
+      await gameStore.loadGames()
+    })
     
     const navigateToGameDetail = (gameId: number) => {
       router.push(`/game/${gameId}`)
