@@ -344,56 +344,55 @@ def update_game(current_user_id, game_id):
         cur.close()
         return jsonify({'message': '游戏不存在'}), 404
     
-    # 构建更新字段
-    update_fields = []
-    values = []
+    # 预处理数据
+    processed_data = {}
     for field in ['title', 'description', 'type', 'release_date', 'price', 'developer', 'publisher', 'image_url']:
         if field in data:
-            # 特殊处理 release_date 字段
-            if field == 'release_date' and data[field]:
-                # 确保日期格式正确
-                try:
-                    # 尝试解析日期字符串，确保格式为 YYYY-MM-DD
-                    date_str = data[field].split('T')[0].split(' ')[0]
-                    update_fields.append(f'{field} = %s')
-                    values.append(date_str)
-                except Exception as e:
-                    return jsonify({'message': f'日期格式错误: {str(e)}'}), 400
-            else:
-                update_fields.append(f'{field} = %s')
-                values.append(data[field])
+            processed_data[field] = data[field]
     
-    if not update_fields:
+    # 构建 SQL 更新语句
+    if processed_data:
+        placeholders = []
+        values = []
+        for field, value in processed_data.items():
+            placeholders.append(f'{field} = %s')
+            values.append(value)
+        
+        values.append(game_id)  # 添加 WHERE 子句的参数
+        
+        try:
+            # 执行更新 - 使用普通字符串而不是f-string
+            update_sql = '''
+                UPDATE games 
+                SET {} 
+                WHERE id = %s
+            '''.format(', '.join(placeholders))
+            
+            cur.execute(update_sql, tuple(values))
+            mysql.connection.commit()
+            
+            # 获取更新后的游戏数据，使用简单的日期格式
+            # 注意：在MySQL查询中需要使用%%来转义%符号
+            select_sql = '''
+                SELECT 
+                    id, title, description, type,
+                    DATE_FORMAT(release_date, '%%Y-%%m-%%d') as release_date,
+                    price, developer, publisher, image_url, created_at
+                FROM games 
+                WHERE id = %s
+            '''
+            cur.execute(select_sql, (game_id,))
+            updated_game = cur.fetchone()
+            cur.close()
+            
+            return jsonify(updated_game)
+        except Exception as e:
+            mysql.connection.rollback()
+            cur.close()
+            return jsonify({'message': f'更新游戏失败: {str(e)}'}), 400
+    else:
         cur.close()
         return jsonify({'message': '没有提供要更新的字段'}), 400
-    
-    try:
-        # 执行更新
-        values.append(game_id)
-        update_query = f'''
-            UPDATE games 
-            SET {', '.join(update_fields)}
-            WHERE id = %s
-        '''
-        cur.execute(update_query, tuple(values))
-        mysql.connection.commit()
-        
-        # 获取更新后的游戏数据
-        select_query = '''
-            SELECT 
-                id, title, description, type,
-                DATE_FORMAT(release_date, '%Y-%m-%d') as release_date,
-                price, developer, publisher, image_url, created_at
-            FROM games 
-            WHERE id = %s
-        '''
-        cur.execute(select_query, (game_id,))
-        updated_game = cur.fetchone()
-        cur.close()
-        
-        return jsonify(updated_game)
-    except Exception as e:
-        return jsonify({'message': f'更新游戏失败: {str(e)}'}), 400
 
 # 删除游戏
 @app.route('/api/games/<int:game_id>', methods=['DELETE'])
