@@ -10,7 +10,7 @@
           @input="handleSearchInput"
           @keyup.enter="performSearch"
           type="text" 
-          placeholder="搜索游戏、开发商、类型..."
+          placeholder="搜索游戏标题..."
           class="search-input"
         >
         <button 
@@ -142,7 +142,7 @@ export default defineComponent({
     
     const handleAddToCart = async (game: any) => {
       if (!userStore.isLoggedIn) {
-        router.push('/login')
+        alert('请先登录')
         return
       }
 

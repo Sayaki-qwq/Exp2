@@ -23,6 +23,8 @@ CREATE TABLE games (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE games ADD FULLTEXT(title);
+
 -- 用户游戏库表
 CREATE TABLE user_library (
     user_id INT,

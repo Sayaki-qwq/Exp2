@@ -51,10 +51,6 @@ export default defineComponent({
     
     // 在组件挂载时加载游戏库数据
     onMounted(async () => {
-      if (!userStore.isLoggedIn) {
-        router.push('/login')
-        return
-      }
       await gameStore.loadUserLibrary()
     })
     

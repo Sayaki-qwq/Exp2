@@ -4,9 +4,9 @@
       <div class="logo">Game Store</div>
       <div class="nav-center">
         <nav class="main-nav">
-          <router-link to="/cart" class="nav-item">购物车</router-link>
+          <button @click="navigateToCart" class="nav-item">购物车</button>
           <router-link to="/store" class="nav-item">商店</router-link>
-          <router-link to="/library" class="nav-item">游戏库</router-link>
+          <button @click="navigateToLibrary" class="nav-item">游戏库</button>
           <router-link v-if="userStore.isAdmin" to="/admin" class="nav-item admin">管理</router-link>
         </nav>
       </div>
@@ -54,6 +54,7 @@
 import { defineComponent, ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { useGameStore } from '@/stores/gameStore'
+import { useRouter } from 'vue-router'
 import AuthModal from '../auth/AuthModal.vue'
 
 export default defineComponent({
@@ -64,6 +65,7 @@ export default defineComponent({
   setup() {
     const userStore = useUserStore()
     const gameStore = useGameStore()
+    const router = useRouter()
     const showAuthModal = ref(false)
     const authModalType = ref('login')
     
@@ -71,6 +73,22 @@ export default defineComponent({
     onMounted(() => {
       userStore.initUser()
     })
+    
+    const navigateToCart = () => {
+      if (!userStore.isLoggedIn) {
+        alert('请先登录')
+        return
+      }
+      router.push('/cart')
+    }
+    
+    const navigateToLibrary = () => {
+      if (!userStore.isLoggedIn) {
+        alert('请先登录')
+        return
+      }
+      router.push('/library')
+    }
     
     const showLoginModal = () => {
       authModalType.value = 'login'
@@ -100,6 +118,8 @@ export default defineComponent({
       userStore,
       showAuthModal,
       authModalType,
+      navigateToCart,
+      navigateToLibrary,
       showLoginModal,
       showRegisterModal,
       handleLoginSuccess,
@@ -149,6 +169,9 @@ export default defineComponent({
   padding: 0.5rem 1rem;
   border-radius: 4px;
   transition: background-color 0.3s;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .nav-item:hover {

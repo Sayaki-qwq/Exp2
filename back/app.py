@@ -17,6 +17,7 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'Pai31415926.mysql'
 app.config['MYSQL_DB'] = 'exp2'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+app.config['MYSQL_CHARSET'] = 'utf8mb4'
 
 # JWT配置
 app.config['SECRET_KEY'] = secrets.token_hex(32)
@@ -162,21 +163,17 @@ def search_games():
     
     cur = mysql.connection.cursor()
     try:
-        # 使用LIKE进行模糊搜索，支持中文
+        # 仅根据游戏标题进行模糊搜索，支持中文
         query = '''
             SELECT 
                 id, title, description, type, 
                 DATE_FORMAT(release_date, '%Y-%m-%d') as release_date,
                 price, developer, publisher, image_url, created_at 
             FROM games 
-            WHERE title LIKE %s 
-               OR description LIKE %s 
-               OR developer LIKE %s 
-               OR publisher LIKE %s
-               OR type LIKE %s
+            WHERE title LIKE CONCAT('%', %s, '%')
+            ORDER BY title
         '''
-        search_pattern = f'%{search_term}%'
-        cur.execute(query, (search_pattern, search_pattern, search_pattern, search_pattern, search_pattern))
+        cur.execute(query, (search_term,))
         games = cur.fetchall()
         cur.close()
         return jsonify(games)

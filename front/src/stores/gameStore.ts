@@ -69,7 +69,7 @@ export const useGameStore = defineStore('game', () => {
         params: { q: query }
       })
       
-      searchResults.value = response.data.map((game: any) => ({
+      searchResults.value = (Array.isArray(response.data) ? response.data : []).map((game: any) => ({
         id: game.id,
         title: game.title,
         description: game.description,
@@ -167,7 +167,7 @@ export const useGameStore = defineStore('game', () => {
   // 添加游戏到购物车
   async function addToCart(game: Game) {
     if (!userStore.isLoggedIn) {
-      // 如果用户未登录，提示用户登录
+      alert('请先登录')
       return false
     }
 
