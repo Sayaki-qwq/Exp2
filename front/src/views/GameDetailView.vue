@@ -7,8 +7,24 @@
       <div class="game-header-info">
         <h1 class="game-title">{{ game.title }}</h1>
         <div class="game-meta">
-          <p class="game-developer">开发商: {{ game.developer }}</p>
-          <p class="game-publisher">发行商: {{ game.publisher }}</p>
+          <p class="game-developer">
+            开发商: 
+            <span 
+              @click="navigateToDeveloper" 
+              class="developer-link"
+            >
+              {{ game.developer }}
+            </span>
+          </p>
+          <p class="game-publisher">
+            发行商: 
+            <span 
+              @click="navigateToPublisher" 
+              class="publisher-link"
+            >
+              {{ game.publisher }}
+            </span>
+          </p>
           <p class="game-release">发行日期: {{ game.releaseDate }}</p>
           <p class="game-type">类型: {{ game.type }}</p>
         </div>
@@ -100,6 +116,10 @@ export default defineComponent({
     const backButtonText = computed(() => {
       if (route.query.from === 'library') {
         return '返回游戏库'
+      } else if (route.query.from === 'developer' && route.query.developer) {
+        return `返回 ${route.query.developer} 页面`
+      } else if (route.query.from === 'publisher' && route.query.publisher) {
+        return `返回 ${route.query.publisher} 页面`
       }
       return '返回商店'
     })
@@ -111,6 +131,10 @@ export default defineComponent({
     const goBack = () => {
       if (route.query.from === 'library') {
         router.push('/library')
+      } else if (route.query.from === 'developer' && route.query.developer) {
+        router.push(`/developer/${encodeURIComponent(route.query.developer as string)}`)
+      } else if (route.query.from === 'publisher' && route.query.publisher) {
+        router.push(`/publisher/${encodeURIComponent(route.query.publisher as string)}`)
       } else {
         router.push('/store')
       }
@@ -149,6 +173,18 @@ export default defineComponent({
       }
     }
     
+    const navigateToDeveloper = () => {
+      if (game.value?.developer) {
+        router.push(`/developer/${encodeURIComponent(game.value.developer)}?from=game&gameId=${game.value.id}`)
+      }
+    }
+    
+    const navigateToPublisher = () => {
+      if (game.value?.publisher) {
+        router.push(`/publisher/${encodeURIComponent(game.value.publisher)}?from=game&gameId=${game.value.id}`)
+      }
+    }
+    
     return {
       game,
       gameStore,
@@ -158,7 +194,9 @@ export default defineComponent({
       isLoading,
       handleAddToCart,
       launchGame,
-      formatPrice
+      formatPrice,
+      navigateToDeveloper,
+      navigateToPublisher
     }
   }
 })
@@ -207,6 +245,28 @@ export default defineComponent({
   margin: 0.5rem 0;
   font-size: 1rem;
   color: #8f98a0;
+}
+
+.developer-link {
+  color: #5c7e10;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.3s;
+}
+
+.developer-link:hover {
+  color: #6d9619;
+}
+
+.publisher-link {
+  color: #5c7e10;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.3s;
+}
+
+.publisher-link:hover {
+  color: #6d9619;
 }
 
 .game-detail-content {

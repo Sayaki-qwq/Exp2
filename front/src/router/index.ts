@@ -5,6 +5,8 @@ import StoreView from '@/views/StoreView.vue'
 import CartView from '@/views/CartView.vue'
 import LibraryView from '@/views/LibraryView.vue'
 import GameDetailView from '@/views/GameDetailView.vue'
+import DeveloperView from '@/views/DeveloperView.vue'
+import PublisherView from '@/views/PublisherView.vue'
 import AdminView from '@/views/AdminView.vue'
 import { useUserStore } from '@/stores/userStore'
 
@@ -24,6 +26,14 @@ const routes = [
       {
         path: 'game/:id',
         component: GameDetailView
+      },
+      {
+        path: 'developer/:name',
+        component: DeveloperView
+      },
+      {
+        path: 'publisher/:name',
+        component: PublisherView
       },
       {
         path: 'cart',
