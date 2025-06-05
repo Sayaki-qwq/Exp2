@@ -14,7 +14,7 @@
             <h3>{{ game.title }}</h3>
             <p class="type">类型：{{ game.type }}</p>
             <p class="release-date">发行日期：{{ game.releaseDate || '暂无' }}</p>
-            <p class="price">价格：¥{{ game.price }}</p>
+            <p class="price">价格：¥{{ formatPrice(game.price) }}</p>
             <p class="developer">开发商：{{ game.developer }}</p>
             <p class="publisher">发行商：{{ game.publisher }}</p>
           </div>
@@ -141,6 +141,7 @@
 import { defineComponent, ref, reactive } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { useUserStore } from '@/stores/userStore'
+import { formatPrice } from '@/utils/formatters'
 import axios from 'axios'
 
 export default defineComponent({
@@ -273,7 +274,8 @@ export default defineComponent({
       confirmDelete,
       deleteGame,
       submitForm,
-      closeForm
+      closeForm,
+      formatPrice
     }
   }
 })

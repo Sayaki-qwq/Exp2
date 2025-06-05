@@ -18,7 +18,7 @@
             <p class="cart-item-developer">开发商: {{ item.game.developer }}</p>
           </div>
           <div class="cart-item-price">
-            ¥{{ item.game.price }}
+            ¥{{ formatPrice(item.game.price) }}
           </div>
           <div class="cart-item-actions">
             <button @click="gameStore.removeFromCart(item.game.id)" class="btn-remove">
@@ -37,7 +37,7 @@
           </div>
           <div class="total-row">
             <span>总价:</span>
-            <span class="price">¥{{ gameStore.cartTotal }}</span>
+            <span class="price">¥{{ formatPrice(gameStore.cartTotal) }}</span>
           </div>
           <button @click="checkout" class="btn-checkout">结算</button>
         </div>
@@ -51,6 +51,7 @@ import { defineComponent, onMounted } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
 import { useUserStore } from '@/stores/userStore'
 import { useRouter } from 'vue-router'
+import { formatPrice } from '@/utils/formatters'
 
 export default defineComponent({
   name: 'CartView',
@@ -58,6 +59,8 @@ export default defineComponent({
     const gameStore = useGameStore()
     const userStore = useUserStore()
     const router = useRouter()
+    
+
     
     // 在组件挂载时加载购物车数据
     onMounted(async () => {
@@ -73,7 +76,7 @@ export default defineComponent({
         const success = await gameStore.purchaseGames()
         if (success) {
           router.push('/library')
-      }
+        }
       } catch (error) {
         console.error('结算失败', error)
       }
@@ -81,7 +84,8 @@ export default defineComponent({
     
     return {
       gameStore,
-      checkout
+      checkout,
+      formatPrice
     }
   }
 })

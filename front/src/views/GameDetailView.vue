@@ -24,7 +24,7 @@
       <div class="game-purchase-section">
         <div class="game-price-card">
           <h3>购买 {{ game.title }}</h3>
-          <p class="game-price">¥{{ game.price }}</p>
+          <p class="game-price">¥{{ formatPrice(game.price) }}</p>
           <div class="purchase-actions">
             <button 
               v-if="!gameStore.isInLibrary(game.id)" 
@@ -68,6 +68,7 @@ import { defineComponent, ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
 import type { Game } from '@/stores/gameStore'
+import { formatPrice } from '@/utils/formatters'
 
 export default defineComponent({
   name: 'GameDetailView',
@@ -138,6 +139,12 @@ export default defineComponent({
           type: game.value.type
         })
         
+        // 可以添加更多的启动逻辑，比如：
+        // - 检查游戏是否已安装
+        // - 启动游戏进程
+        // - 记录游戏启动时间
+        // - 显示启动动画等
+        
         alert(`正在启动 "${game.value.title}"...\n`)
       }
     }
@@ -150,7 +157,8 @@ export default defineComponent({
       backButtonText,
       isLoading,
       handleAddToCart,
-      launchGame
+      launchGame,
+      formatPrice
     }
   }
 })

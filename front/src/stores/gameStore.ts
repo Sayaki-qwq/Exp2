@@ -68,6 +68,7 @@ export const useGameStore = defineStore('game', () => {
       const response = await axios.get(`${apiBaseUrl}/games/search`, {
         params: { q: query }
       })
+      
       searchResults.value = response.data.map((game: any) => ({
         id: game.id,
         title: game.title,
@@ -108,7 +109,7 @@ export const useGameStore = defineStore('game', () => {
   // 计算购物车中的总价
   const cartTotal = computed(() => {
     return cartItems.value.reduce((total, item) => {
-      return total + item.game.price
+      return total + Number(item.game.price)
     }, 0)
   })
 
@@ -277,10 +278,10 @@ export const useGameStore = defineStore('game', () => {
     isInLibrary,
     isInCart,
     searchGames,
+    clearSearch,
     searchResults,
     isSearching,
     searchQuery,
-    clearSearch,
     displayGames
   }
 })

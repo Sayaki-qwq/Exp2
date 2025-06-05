@@ -17,7 +17,6 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'Pai31415926.mysql'
 app.config['MYSQL_DB'] = 'exp2'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-app.config['MYSQL_CHARSET'] = 'utf8mb4'
 
 # JWT配置
 app.config['SECRET_KEY'] = secrets.token_hex(32)
@@ -156,28 +155,28 @@ def get_games():
 # 搜索游戏
 @app.route('/api/games/search', methods=['GET'])
 def search_games():
-    search_query = request.args.get('q', '').strip()
+    search_term = request.args.get('q', '').strip()
     
-    if not search_query:
+    if not search_term:
         return jsonify([])
     
     cur = mysql.connection.cursor()
     try:
-        # 设置连接字符集
-        cur.execute("SET NAMES utf8mb4")
-        
-        # 使用 LIKE 进行模糊搜索，搜索游戏标题
+        # 使用LIKE进行模糊搜索，支持中文
         query = '''
             SELECT 
                 id, title, description, type, 
                 DATE_FORMAT(release_date, '%Y-%m-%d') as release_date,
                 price, developer, publisher, image_url, created_at 
             FROM games 
-            WHERE title LIKE %s
-            ORDER BY title
+            WHERE title LIKE %s 
+               OR description LIKE %s 
+               OR developer LIKE %s 
+               OR publisher LIKE %s
+               OR type LIKE %s
         '''
-        search_param = f'%{search_query}%'
-        cur.execute(query, (search_param,))
+        search_pattern = f'%{search_term}%'
+        cur.execute(query, (search_pattern, search_pattern, search_pattern, search_pattern, search_pattern))
         games = cur.fetchall()
         cur.close()
         return jsonify(games)

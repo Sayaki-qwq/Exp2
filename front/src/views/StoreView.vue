@@ -2,33 +2,37 @@
   <div class="store-container">
     <h1>游戏商店</h1>
     
-    <!-- 搜索区域 -->
+    <!-- 搜索框 -->
     <div class="search-section">
-      <div class="search-box">
+      <div class="search-bar">
         <input 
           v-model="searchInput"
-          @input="handleSearch"
-          @keyup.enter="handleSearch"
-          type="text"
-          placeholder="搜索游戏..."
+          @input="handleSearchInput"
+          @keyup.enter="performSearch"
+          type="text" 
+          placeholder="搜索游戏、开发商、类型..."
           class="search-input"
         >
         <button 
-          v-if="searchInput"
-          @click="clearSearch"
-          class="clear-btn"
+          @click="performSearch"
+          :disabled="gameStore.isSearching"
+          class="search-button"
         >
-          ✕
+          <span v-if="gameStore.isSearching">搜索中...</span>
+          <span v-else>搜索</span>
+        </button>
+        <button 
+          v-if="gameStore.searchQuery"
+          @click="clearSearch"
+          class="clear-button"
+        >
+          清空
         </button>
       </div>
-      <div v-if="gameStore.isSearching" class="search-status">
-        搜索中...
-      </div>
-      <div v-else-if="gameStore.searchQuery && gameStore.searchResults.length === 0" class="search-status">
-        未找到包含 "{{ gameStore.searchQuery }}" 的游戏
-      </div>
-      <div v-else-if="gameStore.searchQuery" class="search-status">
-        找到 {{ gameStore.searchResults.length }} 个游戏
+      
+      <!-- 搜索状态显示 -->
+      <div v-if="gameStore.searchQuery" class="search-status">
+        <p>搜索 "{{ gameStore.searchQuery }}" 的结果：共找到 {{ gameStore.displayGames.length }} 个游戏</p>
       </div>
     </div>
     
@@ -50,7 +54,7 @@
           <p class="game-release">发行日期: {{ game.releaseDate }}</p>
           <p class="game-description">{{ game.description }}</p>
           <div class="game-price-actions">
-            <p class="game-price">¥{{ game.price }}</p>
+            <p class="game-price">¥{{ formatPrice(game.price) }}</p>
             <div class="game-actions">
               <button 
                 v-if="!gameStore.isInLibrary(game.id)" 
@@ -68,6 +72,12 @@
       </div>
     </div>
 
+    <!-- 空搜索结果提示 -->
+    <div v-if="gameStore.searchQuery && gameStore.displayGames.length === 0 && !gameStore.isSearching" class="no-results">
+      <p>没有找到与 "{{ gameStore.searchQuery }}" 相关的游戏</p>
+      <button @click="clearSearch" class="btn-clear-search">查看所有游戏</button>
+    </div>
+
     <!-- 提示消息 -->
     <div v-if="showMessage" :class="['message', messageType]">
       {{ message }}
@@ -80,6 +90,7 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
 import { useUserStore } from '@/stores/userStore'
+import { formatPrice } from '@/utils/formatters'
 
 export default defineComponent({
   name: 'StoreView',
@@ -110,8 +121,16 @@ export default defineComponent({
       await gameStore.loadGames()
     })
     
-    // 处理搜索
-    const handleSearch = () => {
+    // 处理搜索输入
+    const handleSearchInput = () => {
+      // 可以添加防抖逻辑
+      if (!searchInput.value.trim()) {
+        gameStore.clearSearch()
+      }
+    }
+    
+    // 执行搜索
+    const performSearch = () => {
       gameStore.searchGames(searchInput.value)
     }
     
@@ -159,8 +178,10 @@ export default defineComponent({
       message,
       messageType,
       searchInput,
-      handleSearch,
-      clearSearch
+      handleSearchInput,
+      performSearch,
+      clearSearch,
+      formatPrice
     }
   }
 })
@@ -174,21 +195,21 @@ export default defineComponent({
 
 /* 搜索区域样式 */
 .search-section {
-  margin: 1rem 0 2rem 0;
+  margin-bottom: 2rem;
 }
 
-.search-box {
-  position: relative;
-  max-width: 500px;
-  margin: 0 auto;
+.search-bar {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 600px;
+  margin: 0 auto 1rem auto;
 }
 
 .search-input {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  padding-right: 3rem;
-  border: 2px solid #3c5e73;
-  border-radius: 25px;
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #387198;
+  border-radius: 4px;
   background-color: #1b2838;
   color: #c7d5e0;
   font-size: 1rem;
@@ -204,32 +225,78 @@ export default defineComponent({
   color: #8f98a0;
 }
 
-.clear-btn {
-  position: absolute;
-  right: 0.8rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
+.search-button, .clear-button {
+  padding: 0.75rem 1.5rem;
   border: none;
-  color: #8f98a0;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 1.2rem;
-  padding: 0.2rem;
-  border-radius: 50%;
+  font-size: 0.9rem;
   transition: background-color 0.3s;
 }
 
-.clear-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.search-button {
+  background-color: #5c7e10;
+  color: white;
+  min-width: 80px;
+}
+
+.search-button:hover:not(:disabled) {
+  background-color: #6d9619;
+}
+
+.search-button:disabled {
+  background-color: #4a6e0e;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.clear-button {
+  background-color: #8f98a0;
+  color: white;
+}
+
+.clear-button:hover {
+  background-color: #7a8794;
 }
 
 .search-status {
   text-align: center;
-  margin-top: 0.8rem;
   color: #8f98a0;
   font-size: 0.9rem;
 }
 
+.search-status p {
+  margin: 0;
+}
+
+/* 空搜索结果样式 */
+.no-results {
+  text-align: center;
+  margin-top: 3rem;
+  color: #8f98a0;
+}
+
+.no-results p {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.btn-clear-search {
+  background-color: #5c7e10;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.btn-clear-search:hover {
+  background-color: #6d9619;
+}
+
+/* 其他现有样式保持不变 */
 .game-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -363,6 +430,18 @@ export default defineComponent({
   100% {
     opacity: 0;
     transform: translate(-50%, -20px);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .search-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .search-button, .clear-button {
+    width: 100%;
   }
 }
 </style>
