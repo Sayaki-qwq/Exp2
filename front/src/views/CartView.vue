@@ -15,7 +15,10 @@
           </div>
           <div class="cart-item-info">
             <h3 class="cart-item-title">{{ item.game.title }}</h3>
+            <p class="cart-item-type">类型: {{ item.game.type }}</p>
             <p class="cart-item-developer">开发商: {{ item.game.developer }}</p>
+            <p class="cart-item-publisher">发行商: {{ item.game.publisher }}</p>
+            <p class="cart-item-release">发行日期: {{ item.game.releaseDate }}</p>
           </div>
           <div class="cart-item-price">
             ¥{{ formatPrice(item.game.price) }}
@@ -151,12 +154,30 @@ export default defineComponent({
 
 .cart-item-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.2rem;
+}
+
+.cart-item-type {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.95rem;
+  color: #8f98a0;
 }
 
 .cart-item-developer {
   margin: 0.5rem 0 0 0;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
+  color: #8f98a0;
+}
+
+.cart-item-publisher {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.95rem;
+  color: #8f98a0;
+}
+
+.cart-item-release {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.95rem;
   color: #8f98a0;
 }
 
@@ -169,16 +190,17 @@ export default defineComponent({
 .cart-item-price {
   font-weight: bold;
   color: #c7d5e0;
+  font-size: 1.1rem;
 }
 
 .btn-remove {
   background-color: #c23b22;
   color: white;
   border: none;
-  padding: 0.3rem 0.6rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
 }
 
 .cart-summary {
