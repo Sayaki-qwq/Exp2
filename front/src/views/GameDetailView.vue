@@ -211,10 +211,12 @@ export default defineComponent({
   position: relative;
   min-height: 100vh;
   overflow: hidden;
+  margin: -2rem;
+  padding: 2rem;
 }
 
 .background-layer {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -222,19 +224,19 @@ export default defineComponent({
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(20px);
-  transform: scale(1.1); /* 略微放大以避免模糊边缘 */
-  z-index: -2;
+  filter: blur(50px);
+  transform: scale(1.1);
+  z-index: 0;
 }
 
 .background-overlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7); /* 变暗遮罩 */
-  z-index: -1;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
 }
 
 .game-detail-container {
@@ -243,13 +245,13 @@ export default defineComponent({
   margin: 0 auto;
   padding: 2rem;
   color: #c7d5e0;
-  z-index: 1;
-  background: rgba(27, 40, 56, 0.85); /* 半透明背景增强可读性 */
+  z-index: 2;
+  background: rgba(27, 40, 56, 0.85);
   border-radius: 12px;
   margin-top: 1rem;
   margin-bottom: 1rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px); /* 额外的背景模糊 */
+  backdrop-filter: blur(10px);
 }
 
 .game-detail-header {
@@ -277,7 +279,7 @@ export default defineComponent({
   margin-top: 0;
   margin-bottom: 1rem;
   color: #ffffff;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.6);
 }
 
 .game-meta {
@@ -287,29 +289,32 @@ export default defineComponent({
 .game-developer, .game-publisher, .game-release, .game-type {
   margin: 0.5rem 0;
   font-size: 1rem;
-  color: #c7d5e0;
+  color: #f0f0f0;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
 }
 
 .developer-link {
-  color: #7fb800;
+  color: #90d000;
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.3s;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .developer-link:hover {
-  color: #9ed500;
+  color: #b3ff00;
 }
 
 .publisher-link {
-  color: #7fb800;
+  color: #90d000;
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.3s;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .publisher-link:hover {
-  color: #9ed500;
+  color: #b3ff00;
 }
 
 .game-detail-content {
@@ -323,12 +328,13 @@ export default defineComponent({
   font-size: 1.5rem;
   margin-bottom: 1rem;
   color: #ffffff;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 .game-description-full {
   line-height: 1.6;
-  color: #e8e8e8;
+  color: #f5f5f5;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .game-price-card {
