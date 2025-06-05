@@ -19,7 +19,6 @@ export interface Game {
 // 定义购物车中的游戏项
 export interface CartItem {
   game: Game
-  quantity: number
 }
 
 export const useGameStore = defineStore('game', () => {
@@ -29,22 +28,21 @@ export const useGameStore = defineStore('game', () => {
   // 游戏列表数据
   const games = ref<Game[]>([])
   
+  // 搜索结果数据
+  const searchResults = ref<Game[]>([])
+  const isSearching = ref(false)
+  const searchQuery = ref('')
+
   // 加载游戏列表
   async function loadGames() {
     try {
-      const config = userStore.currentUser?.token ? {
-        headers: {
-          'Authorization': `Bearer ${userStore.currentUser.token}`
-        }
-      } : {}
-      
-      const response = await axios.get(`${apiBaseUrl}/games`, config)
+      const response = await axios.get(`${apiBaseUrl}/games`)
       games.value = response.data.map((game: any) => ({
         id: game.id,
         title: game.title,
         description: game.description,
         type: game.type,
-        releaseDate: game.release_date || '',  // 使用后端返回的格式化日期
+        releaseDate: game.release_date || '',
         price: game.price,
         developer: game.developer,
         publisher: game.publisher,
@@ -55,6 +53,52 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  // 搜索游戏
+  async function searchGames(query: string) {
+    if (!query.trim()) {
+      searchResults.value = []
+      searchQuery.value = ''
+      return
+    }
+
+    isSearching.value = true
+    searchQuery.value = query
+    
+    try {
+      const response = await axios.get(`${apiBaseUrl}/games/search`, {
+        params: { q: query }
+      })
+      searchResults.value = response.data.map((game: any) => ({
+        id: game.id,
+        title: game.title,
+        description: game.description,
+        type: game.type,
+        releaseDate: game.release_date || '',
+        price: game.price,
+        developer: game.developer,
+        publisher: game.publisher,
+        imageUrl: game.image_url
+      }))
+    } catch (error) {
+      console.error('搜索游戏失败', error)
+      searchResults.value = []
+    } finally {
+      isSearching.value = false
+    }
+  }
+
+  // 清空搜索结果
+  function clearSearch() {
+    searchResults.value = []
+    searchQuery.value = ''
+    isSearching.value = false
+  }
+
+  // 获取当前显示的游戏列表（搜索结果或全部游戏）
+  const displayGames = computed(() => {
+    return searchQuery.value ? searchResults.value : games.value
+  })
+
   // 购物车数据
   const cartItems = ref<CartItem[]>([])
   
@@ -64,13 +108,13 @@ export const useGameStore = defineStore('game', () => {
   // 计算购物车中的总价
   const cartTotal = computed(() => {
     return cartItems.value.reduce((total, item) => {
-      return total + (item.game.price * item.quantity)
+      return total + item.game.price
     }, 0)
   })
 
   // 计算购物车中的游戏数量
   const cartCount = computed(() => {
-    return cartItems.value.reduce((count, item) => count + item.quantity, 0)
+    return cartItems.value.length
   })
 
   // 从服务器加载用户的购物车
@@ -79,7 +123,19 @@ export const useGameStore = defineStore('game', () => {
     
     try {
       const response = await axios.get(`${apiBaseUrl}/cart`)
-      cartItems.value = response.data.items || []
+      cartItems.value = response.data.items.map((item: any) => ({
+        game: {
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          type: item.type,
+          releaseDate: item.release_date,
+          price: item.price,
+          developer: item.developer,
+          publisher: item.publisher,
+          imageUrl: item.image_url
+        }
+      }))
     } catch (error) {
       console.error('加载购物车失败', error)
     }
@@ -91,7 +147,17 @@ export const useGameStore = defineStore('game', () => {
     
     try {
       const response = await axios.get(`${apiBaseUrl}/library`)
-      libraryGames.value = response.data.games || []
+      libraryGames.value = (response.data.games || []).map((game: any) => ({
+        id: game.id,
+        title: game.title,
+        description: game.description,
+        type: game.type,
+        releaseDate: game.release_date || '',
+        price: game.price,
+        developer: game.developer,
+        publisher: game.publisher,
+        imageUrl: game.image_url
+      }))
     } catch (error) {
       console.error('加载游戏库失败', error)
     }
@@ -99,63 +165,35 @@ export const useGameStore = defineStore('game', () => {
 
   // 添加游戏到购物车
   async function addToCart(game: Game) {
-    const existingItem = cartItems.value.find(item => item.game.id === game.id)
-    
-    if (existingItem) {
-      existingItem.quantity++
-    } else {
-      cartItems.value.push({
-        game,
-        quantity: 1
-      })
+    if (!userStore.isLoggedIn) {
+      // 如果用户未登录，提示用户登录
+      return false
     }
-    
-    // 如果用户已登录，同步到服务器
-    if (userStore.isLoggedIn) {
-      try {
-        await axios.post(`${apiBaseUrl}/cart/add`, { gameId: game.id, quantity: 1 })
-      } catch (error) {
-        console.error('添加到购物车失败', error)
-      }
+
+    try {
+      await axios.post(`${apiBaseUrl}/cart/add`, { 
+        gameId: game.id
+      })
+      
+      // 重新加载购物车
+      await loadUserCart()
+      return true
+    } catch (error) {
+      console.error('添加到购物车失败', error)
+      return false
     }
   }
 
   // 从购物车移除游戏
   async function removeFromCart(gameId: number) {
-    const index = cartItems.value.findIndex(item => item.game.id === gameId)
-    if (index !== -1) {
-      cartItems.value.splice(index, 1)
-      
-      // 如果用户已登录，同步到服务器
-      if (userStore.isLoggedIn) {
-        try {
-          await axios.delete(`${apiBaseUrl}/cart/remove/${gameId}`)
-        } catch (error) {
-          console.error('从购物车移除失败', error)
-        }
-      }
-    }
-  }
+    if (!userStore.isLoggedIn) return
 
-  // 更新购物车中游戏的数量
-  async function updateCartItemQuantity(gameId: number, quantity: number) {
-    const item = cartItems.value.find(item => item.game.id === gameId)
-    if (item) {
-      item.quantity = quantity
-      // 如果数量为0，从购物车中移除
-      if (quantity <= 0) {
-        removeFromCart(gameId)
-        return
-      }
-      
-      // 如果用户已登录，同步到服务器
-      if (userStore.isLoggedIn) {
-        try {
-          await axios.put(`${apiBaseUrl}/cart/update`, { gameId, quantity })
-        } catch (error) {
-          console.error('更新购物车数量失败', error)
-        }
-      }
+    try {
+      await axios.delete(`${apiBaseUrl}/cart/remove/${gameId}`)
+      // 重新加载购物车
+      await loadUserCart()
+    } catch (error) {
+      console.error('从购物车移除失败', error)
     }
   }
 
@@ -165,7 +203,18 @@ export const useGameStore = defineStore('game', () => {
     if (userStore.isLoggedIn) {
       try {
         const response = await axios.post(`${apiBaseUrl}/purchase`)
-        libraryGames.value = [...libraryGames.value, ...response.data.purchasedGames]
+        const purchasedGames = (response.data.purchasedGames || []).map((game: any) => ({
+          id: game.id,
+          title: game.title,
+          description: game.description,
+          type: game.type,
+          releaseDate: game.release_date || '',
+          price: game.price,
+          developer: game.developer,
+          publisher: game.publisher,
+          imageUrl: game.image_url
+        }))
+        libraryGames.value = [...libraryGames.value, ...purchasedGames]
         cartItems.value = []
         return true
       } catch (error) {
@@ -224,9 +273,14 @@ export const useGameStore = defineStore('game', () => {
     loadUserLibrary,
     addToCart,
     removeFromCart,
-    updateCartItemQuantity,
     purchaseGames,
     isInLibrary,
-    isInCart
+    isInCart,
+    searchGames,
+    searchResults,
+    isSearching,
+    searchQuery,
+    clearSearch,
+    displayGames
   }
 })

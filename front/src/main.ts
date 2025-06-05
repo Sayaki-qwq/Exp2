@@ -6,23 +6,19 @@ import axios from 'axios'
 
 import App from './App.vue'
 import router from './router'
-
-// 检查是否是页面刷新
-const isPageRefresh = window.performance && window.performance.navigation.type === 1
-
-// 如果不是页面刷新（即是新的会话），则清除localStorage
-if (!isPageRefresh) {
-  localStorage.removeItem('user')
-  delete axios.defaults.headers.common['Authorization']
-}
+import { useUserStore } from './stores/userStore'
 
 // 设置axios默认值
 axios.defaults.baseURL = 'http://localhost:5000'
 axios.defaults.withCredentials = true
 
 const app = createApp(App)
-
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
+
+// 初始化用户状态
+const userStore = useUserStore(pinia)
+userStore.initUser()
 
 app.mount('#app')

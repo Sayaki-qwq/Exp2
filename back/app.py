@@ -17,6 +17,7 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'Pai31415926.mysql'
 app.config['MYSQL_DB'] = 'exp2'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+app.config['MYSQL_CHARSET'] = 'utf8mb4'
 
 # JWT配置
 app.config['SECRET_KEY'] = secrets.token_hex(32)
@@ -152,13 +153,45 @@ def get_games():
     cur.close()
     return jsonify(games)
 
+# 搜索游戏
+@app.route('/api/games/search', methods=['GET'])
+def search_games():
+    search_query = request.args.get('q', '').strip()
+    
+    if not search_query:
+        return jsonify([])
+    
+    cur = mysql.connection.cursor()
+    try:
+        # 设置连接字符集
+        cur.execute("SET NAMES utf8mb4")
+        
+        # 使用 LIKE 进行模糊搜索，搜索游戏标题
+        query = '''
+            SELECT 
+                id, title, description, type, 
+                DATE_FORMAT(release_date, '%Y-%m-%d') as release_date,
+                price, developer, publisher, image_url, created_at 
+            FROM games 
+            WHERE title LIKE %s
+            ORDER BY title
+        '''
+        search_param = f'%{search_query}%'
+        cur.execute(query, (search_param,))
+        games = cur.fetchall()
+        cur.close()
+        return jsonify(games)
+    except Exception as e:
+        cur.close()
+        return jsonify({'message': f'搜索失败: {str(e)}'}), 400
+
 # 获取用户购物车
 @app.route('/api/cart', methods=['GET'])
 @token_required
 def get_cart(current_user_id):
     cur = mysql.connection.cursor()
     cur.execute(
-        '''SELECT g.*, ci.quantity 
+        '''SELECT g.* 
            FROM cart_items ci 
            JOIN games g ON ci.game_id = g.id 
            WHERE ci.user_id = %s''',
@@ -174,20 +207,18 @@ def get_cart(current_user_id):
 def add_to_cart(current_user_id):
     data = request.get_json()
     game_id = data.get('gameId')
-    quantity = data.get('quantity', 1)
     
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            '''INSERT INTO cart_items (user_id, game_id, quantity) 
-               VALUES (%s, %s, %s) 
-               ON DUPLICATE KEY UPDATE quantity = quantity + %s''',
-            (current_user_id, game_id, quantity, quantity)
+            '''INSERT IGNORE INTO cart_items (user_id, game_id) 
+               VALUES (%s, %s)''',
+            (current_user_id, game_id)
         )
         mysql.connection.commit()
         return jsonify({'message': '添加成功'})
     except Exception as e:
-        return jsonify({'message': '添加失败'}), 400
+        return jsonify({'message': f'添加失败: {str(e)}'}), 400
     finally:
         cur.close()
 
@@ -208,26 +239,7 @@ def remove_from_cart(current_user_id, game_id):
     finally:
         cur.close()
 
-# 更新购物车数量
-@app.route('/api/cart/update', methods=['PUT'])
-@token_required
-def update_cart_quantity(current_user_id):
-    data = request.get_json()
-    game_id = data.get('gameId')
-    quantity = data.get('quantity')
-    
-    cur = mysql.connection.cursor()
-    try:
-        cur.execute(
-            'UPDATE cart_items SET quantity = %s WHERE user_id = %s AND game_id = %s',
-            (quantity, current_user_id, game_id)
-        )
-        mysql.connection.commit()
-        return jsonify({'message': '更新成功'})
-    except Exception as e:
-        return jsonify({'message': '更新失败'}), 400
-    finally:
-        cur.close()
+
 
 # 获取用户游戏库
 @app.route('/api/library', methods=['GET'])

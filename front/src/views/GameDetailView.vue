@@ -28,27 +28,34 @@
           <div class="purchase-actions">
             <button 
               v-if="!gameStore.isInLibrary(game.id)" 
-              @click="gameStore.addToCart(game)" 
+              @click="handleAddToCart" 
               class="btn-add-cart"
-              :disabled="gameStore.isInCart(game.id)"
+              :disabled="gameStore.isInCart(game.id) || isLoading"
             >
-              {{ gameStore.isInCart(game.id) ? '已在购物车' : '添加到购物车' }}
+              <span v-if="isLoading">添加中...</span>
+              <span v-else>{{ gameStore.isInCart(game.id) ? '已在购物车' : '添加到购物车' }}</span>
             </button>
             <button 
-              v-if="gameStore.isInCart(game.id)" 
+              v-if="gameStore.isInCart(game.id) && !gameStore.isInLibrary(game.id)" 
               @click="goToCart" 
               class="btn-go-cart"
             >
               前往购物车
             </button>
-            <span v-if="gameStore.isInLibrary(game.id)" class="in-library-badge">已拥有</span>
+            <button 
+              v-if="gameStore.isInLibrary(game.id)" 
+              @click="launchGame" 
+              class="btn-launch"
+            >
+              启动游戏
+            </button>
           </div>
         </div>
       </div>
     </div>
     
     <div class="back-to-store">
-      <router-link to="/store" class="btn-back">« 返回商店</router-link>
+      <button @click="goBack" class="btn-back">« {{ backButtonText }}</button>
     </div>
   </div>
   <div v-else class="loading-container">
@@ -68,19 +75,82 @@ export default defineComponent({
     const route = useRoute()
     const router = useRouter()
     const gameStore = useGameStore()
+    
+    // 确保在组件挂载时加载所有必要的数据
+    onMounted(async () => {
+      await gameStore.loadGames()
+      if (gameStore.libraryGames.length === 0) {
+        await gameStore.loadUserLibrary()
+      }
+    })
+    
     const game = computed(() => {
       const gameId = Number(route.params.id)
-      return gameStore.games.find(g => g.id === gameId) || null
+      // 先从商店游戏列表中查找
+      let foundGame = gameStore.games.find(g => g.id === gameId)
+      // 如果商店中没有，再从游戏库中查找
+      if (!foundGame) {
+        foundGame = gameStore.libraryGames.find(g => g.id === gameId)
+      }
+      return foundGame || null
+    })
+    
+    // 智能返回按钮文本
+    const backButtonText = computed(() => {
+      if (route.query.from === 'library') {
+        return '返回游戏库'
+      }
+      return '返回商店'
     })
     
     const goToCart = () => {
       router.push('/cart')
     }
     
+    const goBack = () => {
+      if (route.query.from === 'library') {
+        router.push('/library')
+      } else {
+        router.push('/store')
+      }
+    }
+    
+    const isLoading = ref(false)
+    
+    const handleAddToCart = async () => {
+      if (!game.value) return
+      
+      isLoading.value = true
+      try {
+        await gameStore.addToCart(game.value)
+      } finally {
+        isLoading.value = false
+      }
+    }
+    
+    const launchGame = () => {
+      if (game.value) {
+        console.log(`🎮 成功启动游戏: ${game.value.title}`)
+        console.log('游戏详情:', {
+          id: game.value.id,
+          title: game.value.title,
+          developer: game.value.developer,
+          type: game.value.type
+        })
+        
+        alert(`正在启动 "${game.value.title}"...\n`)
+      }
+    }
+    
     return {
       game,
       gameStore,
-      goToCart
+      goToCart,
+      goBack,
+      backButtonText,
+      isLoading,
+      handleAddToCart,
+      launchGame
     }
   }
 })
@@ -175,7 +245,7 @@ export default defineComponent({
   gap: 0.5rem;
 }
 
-.btn-add-cart, .btn-go-cart {
+.btn-add-cart, .btn-go-cart, .btn-launch {
   padding: 0.8rem 1rem;
   border: none;
   border-radius: 4px;
@@ -209,13 +279,13 @@ export default defineComponent({
   background-color: #0b8eee;
 }
 
-.in-library-badge {
-  background-color: #1a9fff;
+.btn-launch {
+  background-color: #27a74a;
   color: white;
-  padding: 0.8rem 1rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  text-align: center;
+}
+
+.btn-launch:hover {
+  background-color: #1e8c3a;
 }
 
 .back-to-store {
@@ -224,8 +294,10 @@ export default defineComponent({
 
 .btn-back {
   color: #c7d5e0;
-  text-decoration: none;
+  background: none;
+  border: none;
   font-size: 1rem;
+  cursor: pointer;
   transition: color 0.3s;
 }
 

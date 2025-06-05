@@ -20,6 +20,20 @@ export const useUserStore = defineStore('user', () => {
   // API基础URL
   const apiBaseUrl = 'http://localhost:5000/api'
   
+  // 配置axios拦截器
+  axios.interceptors.request.use(
+    (config) => {
+      const token = currentUser.value?.token
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+      return config
+    },
+    (error) => {
+      return Promise.reject(error)
+    }
+  )
+  
   // 计算属性：是否已登录
   const isLoggedIn = computed(() => !!currentUser.value)
   
@@ -32,12 +46,9 @@ export const useUserStore = defineStore('user', () => {
     if (savedUser) {
       try {
         currentUser.value = JSON.parse(savedUser)
-        // 设置axios默认头部包含token
-        if (currentUser.value?.token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${currentUser.value.token}`
-        }
       } catch (e) {
         localStorage.removeItem('user')
+        currentUser.value = null
       }
     }
   }
@@ -59,9 +70,6 @@ export const useUserStore = defineStore('user', () => {
         is_admin: user.is_admin,
         token: token
       }
-      
-      // 设置Authorization头
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       
       // 保存到localStorage
       localStorage.setItem('user', JSON.stringify(currentUser.value))
@@ -99,7 +107,6 @@ export const useUserStore = defineStore('user', () => {
   function logout() {
     currentUser.value = null
     localStorage.removeItem('user')
-    delete axios.defaults.headers.common['Authorization']
   }
   
   return {

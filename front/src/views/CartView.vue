@@ -17,24 +17,8 @@
             <h3 class="cart-item-title">{{ item.game.title }}</h3>
             <p class="cart-item-developer">开发商: {{ item.game.developer }}</p>
           </div>
-          <div class="cart-item-quantity">
-            <button 
-              @click="decreaseQuantity(item.game.id)" 
-              class="btn-quantity"
-              :disabled="item.quantity <= 1"
-            >
-              -
-            </button>
-            <span class="quantity">{{ item.quantity }}</span>
-            <button 
-              @click="increaseQuantity(item.game.id)" 
-              class="btn-quantity"
-            >
-              +
-            </button>
-          </div>
           <div class="cart-item-price">
-            ¥{{ item.game.price * item.quantity }}
+            ¥{{ item.game.price }}
           </div>
           <div class="cart-item-actions">
             <button @click="gameStore.removeFromCart(item.game.id)" class="btn-remove">
@@ -63,39 +47,40 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, onMounted } from 'vue'
 import { useGameStore } from '@/stores/gameStore'
+import { useUserStore } from '@/stores/userStore'
 import { useRouter } from 'vue-router'
 
 export default defineComponent({
   name: 'CartView',
   setup() {
     const gameStore = useGameStore()
+    const userStore = useUserStore()
     const router = useRouter()
     
-    const increaseQuantity = (gameId: number) => {
-      const item = gameStore.cartItems.find(item => item.game.id === gameId)
-      if (item) {
-        gameStore.updateCartItemQuantity(gameId, item.quantity + 1)
+    // 在组件挂载时加载购物车数据
+    onMounted(async () => {
+      if (!userStore.isLoggedIn) {
+        router.push('/login')
+        return
       }
-    }
+      await gameStore.loadUserCart()
+    })
     
-    const decreaseQuantity = (gameId: number) => {
-      const item = gameStore.cartItems.find(item => item.game.id === gameId)
-      if (item && item.quantity > 1) {
-        gameStore.updateCartItemQuantity(gameId, item.quantity - 1)
+    const checkout = async () => {
+      try {
+        const success = await gameStore.purchaseGames()
+        if (success) {
+          router.push('/library')
       }
-    }
-    
-    const checkout = () => {
-      gameStore.purchaseGames()
-      router.push('/library')
+      } catch (error) {
+        console.error('结算失败', error)
+      }
     }
     
     return {
       gameStore,
-      increaseQuantity,
-      decreaseQuantity,
       checkout
     }
   }
@@ -142,7 +127,7 @@ export default defineComponent({
 
 .cart-item {
   display: grid;
-  grid-template-columns: 100px 1fr auto auto auto;
+  grid-template-columns: 100px 1fr auto auto;
   gap: 1rem;
   align-items: center;
   padding: 1rem 0;
@@ -171,34 +156,10 @@ export default defineComponent({
   color: #8f98a0;
 }
 
-.cart-item-quantity {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-quantity {
-  background-color: #387198;
-  color: white;
-  border: none;
-  width: 25px;
-  height: 25px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-quantity:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
+.cart-item-quantity,
+.btn-quantity,
 .quantity {
-  font-size: 0.9rem;
-  min-width: 20px;
-  text-align: center;
+  display: none;
 }
 
 .cart-item-price {

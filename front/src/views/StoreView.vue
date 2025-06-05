@@ -2,9 +2,39 @@
   <div class="store-container">
     <h1>游戏商店</h1>
     
+    <!-- 搜索区域 -->
+    <div class="search-section">
+      <div class="search-box">
+        <input 
+          v-model="searchInput"
+          @input="handleSearch"
+          @keyup.enter="handleSearch"
+          type="text"
+          placeholder="搜索游戏..."
+          class="search-input"
+        >
+        <button 
+          v-if="searchInput"
+          @click="clearSearch"
+          class="clear-btn"
+        >
+          ✕
+        </button>
+      </div>
+      <div v-if="gameStore.isSearching" class="search-status">
+        搜索中...
+      </div>
+      <div v-else-if="gameStore.searchQuery && gameStore.searchResults.length === 0" class="search-status">
+        未找到包含 "{{ gameStore.searchQuery }}" 的游戏
+      </div>
+      <div v-else-if="gameStore.searchQuery" class="search-status">
+        找到 {{ gameStore.searchResults.length }} 个游戏
+      </div>
+    </div>
+    
     <div class="game-grid">
       <div 
-        v-for="game in gameStore.games" 
+        v-for="game in gameStore.displayGames" 
         :key="game.id" 
         class="game-card"
         @click="navigateToGameDetail(game.id)"
@@ -24,11 +54,12 @@
             <div class="game-actions">
               <button 
                 v-if="!gameStore.isInLibrary(game.id)" 
-                @click.stop="gameStore.addToCart(game)" 
+                @click.stop="handleAddToCart(game)" 
                 class="btn-add-cart"
-                :disabled="gameStore.isInCart(game.id)"
+                :disabled="gameStore.isInCart(game.id) || isLoading"
               >
-                {{ gameStore.isInCart(game.id) ? '已在购物车' : '添加到购物车' }}
+                <span v-if="isLoading && loadingGameId === game.id">添加中...</span>
+                <span v-else>{{ gameStore.isInCart(game.id) ? '已在购物车' : '添加到购物车' }}</span>
               </button>
               <span v-else class="in-library-badge">已拥有</span>
             </div>
@@ -36,24 +67,83 @@
         </div>
       </div>
     </div>
+
+    <!-- 提示消息 -->
+    <div v-if="showMessage" :class="['message', messageType]">
+      {{ message }}
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted } from 'vue'
+import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
+import { useUserStore } from '@/stores/userStore'
 
 export default defineComponent({
   name: 'StoreView',
   setup() {
     const gameStore = useGameStore()
+    const userStore = useUserStore()
     const router = useRouter()
+    
+    const isLoading = ref(false)
+    const loadingGameId = ref<number | null>(null)
+    const showMessage = ref(false)
+    const message = ref('')
+    const messageType = ref('')
+    const searchInput = ref('')
+
+    // 显示提示消息
+    const showToast = (msg: string, type: 'success' | 'error') => {
+      message.value = msg
+      messageType.value = type
+      showMessage.value = true
+      setTimeout(() => {
+        showMessage.value = false
+      }, 3000)
+    }
     
     // 在组件挂载时加载游戏数据
     onMounted(async () => {
       await gameStore.loadGames()
     })
+    
+    // 处理搜索
+    const handleSearch = () => {
+      gameStore.searchGames(searchInput.value)
+    }
+    
+    // 清空搜索
+    const clearSearch = () => {
+      searchInput.value = ''
+      gameStore.clearSearch()
+    }
+    
+    const handleAddToCart = async (game: any) => {
+      if (!userStore.isLoggedIn) {
+        router.push('/login')
+        return
+      }
+
+      try {
+        isLoading.value = true
+        loadingGameId.value = game.id
+        const success = await gameStore.addToCart(game)
+        
+        if (success) {
+          showToast('成功添加到购物车', 'success')
+        } else {
+          showToast('添加失败，请重试', 'error')
+        }
+      } catch (error) {
+        showToast('添加失败，请重试', 'error')
+      } finally {
+        isLoading.value = false
+        loadingGameId.value = null
+      }
+    }
     
     const navigateToGameDetail = (gameId: number) => {
       router.push(`/game/${gameId}`)
@@ -61,7 +151,16 @@ export default defineComponent({
     
     return {
       gameStore,
-      navigateToGameDetail
+      navigateToGameDetail,
+      handleAddToCart,
+      isLoading,
+      loadingGameId,
+      showMessage,
+      message,
+      messageType,
+      searchInput,
+      handleSearch,
+      clearSearch
     }
   }
 })
@@ -70,6 +169,65 @@ export default defineComponent({
 <style scoped>
 .store-container {
   padding: 1rem;
+  position: relative;
+}
+
+/* 搜索区域样式 */
+.search-section {
+  margin: 1rem 0 2rem 0;
+}
+
+.search-box {
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  padding-right: 3rem;
+  border: 2px solid #3c5e73;
+  border-radius: 25px;
+  background-color: #1b2838;
+  color: #c7d5e0;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  border-color: #5c7e10;
+}
+
+.search-input::placeholder {
+  color: #8f98a0;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #8f98a0;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.2rem;
+  border-radius: 50%;
+  transition: background-color 0.3s;
+}
+
+.clear-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.search-status {
+  text-align: center;
+  margin-top: 0.8rem;
+  color: #8f98a0;
+  font-size: 0.9rem;
 }
 
 .game-grid {
@@ -147,6 +305,7 @@ export default defineComponent({
   cursor: pointer;
   font-size: 0.9rem;
   transition: background-color 0.3s;
+  min-width: 100px;
 }
 
 .btn-add-cart:hover {
@@ -165,5 +324,45 @@ export default defineComponent({
   padding: 0.5rem 1rem;
   border-radius: 4px;
   font-size: 0.9rem;
+}
+
+/* 提示消息样式 */
+.message {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 4px;
+  color: white;
+  z-index: 1000;
+  animation: fadeInOut 3s ease-in-out;
+}
+
+.success {
+  background-color: #5c7e10;
+}
+
+.error {
+  background-color: #c23b22;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
 }
 </style>
