@@ -30,6 +30,33 @@
         </button>
       </div>
       
+      <!-- 排序选择器 -->
+      <div class="sort-section">
+        <div class="sort-controls">
+          <label class="sort-label">排序方式：</label>
+          <select 
+            v-model="gameStore.sortBy" 
+            @change="handleSortChange"
+            class="sort-select"
+          >
+            <option value="default">默认</option>
+            <option value="release_date">发行日期</option>
+            <option value="price">价格</option>
+          </select>
+          
+          <label class="sort-label order-label">排序：</label>
+          <select 
+            v-model="gameStore.sortOrder"
+            @change="handleSortOrderChange"
+            class="sort-select"
+            :disabled="gameStore.sortBy === 'default'"
+          >
+            <option value="desc">{{ getSortOrderText(gameStore.sortBy, 'desc') }}</option>
+            <option value="asc">{{ getSortOrderText(gameStore.sortBy, 'asc') }}</option>
+          </select>
+        </div>
+      </div>
+      
       <!-- 搜索状态显示 -->
       <div v-if="gameStore.searchQuery" class="search-status">
         <p>搜索 "{{ gameStore.searchQuery }}" 的结果：共找到 {{ gameStore.displayGames.length }} 个游戏</p>
@@ -168,6 +195,26 @@ export default defineComponent({
       router.push(`/game/${gameId}`)
     }
     
+    // 处理排序方式变化
+    const handleSortChange = () => {
+      // Vue的响应式系统会自动处理，无需额外操作
+    }
+    
+    // 处理排序顺序变化
+    const handleSortOrderChange = () => {
+      // Vue的响应式系统会自动处理，无需额外操作
+    }
+    
+    // 获取排序顺序的显示文本
+    const getSortOrderText = (sortBy: string, order: string) => {
+      if (sortBy === 'release_date') {
+        return order === 'desc' ? '最新' : '最早'
+      } else if (sortBy === 'price') {
+        return order === 'desc' ? '降序' : '升序'
+      }
+      return '默认'
+    }
+    
     return {
       gameStore,
       navigateToGameDetail,
@@ -181,6 +228,9 @@ export default defineComponent({
       handleSearchInput,
       performSearch,
       clearSearch,
+      handleSortChange,
+      handleSortOrderChange,
+      getSortOrderText,
       formatPrice
     }
   }
@@ -267,6 +317,56 @@ export default defineComponent({
 
 .search-status p {
   margin: 0;
+}
+
+/* 排序区域样式 */
+.sort-section {
+  margin-top: 1rem;
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sort-label {
+  color: #c7d5e0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.order-label {
+  margin-left: 1rem;
+}
+
+.sort-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #387198;
+  border-radius: 4px;
+  background-color: #1b2838;
+  color: #c7d5e0;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.sort-select:focus {
+  border-color: #5c7e10;
+}
+
+.sort-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #0f1419;
+}
+
+.sort-select option {
+  background-color: #1b2838;
+  color: #c7d5e0;
 }
 
 /* 空搜索结果样式 */
@@ -441,6 +541,24 @@ export default defineComponent({
   }
   
   .search-button, .clear-button {
+    width: 100%;
+  }
+  
+  .sort-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  
+  .sort-label {
+    text-align: center;
+  }
+  
+  .order-label {
+    margin-left: 0;
+  }
+  
+  .sort-select {
     width: 100%;
   }
 }

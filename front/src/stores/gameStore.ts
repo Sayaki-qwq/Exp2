@@ -33,6 +33,10 @@ export const useGameStore = defineStore('game', () => {
   const isSearching = ref(false)
   const searchQuery = ref('')
 
+  // 排序相关状态
+  const sortBy = ref<'release_date' | 'price' | 'default'>('default')
+  const sortOrder = ref<'asc' | 'desc'>('desc') // 默认降序
+
   // 加载游戏列表
   async function loadGames() {
     try {
@@ -97,7 +101,32 @@ export const useGameStore = defineStore('game', () => {
 
   // 获取当前显示的游戏列表（搜索结果或全部游戏）
   const displayGames = computed(() => {
-    return searchQuery.value ? searchResults.value : games.value
+    const baseGames = searchQuery.value ? searchResults.value : games.value
+    
+    if (sortBy.value === 'default') {
+      return baseGames
+    }
+    
+    return [...baseGames].sort((a, b) => {
+      let aValue: any
+      let bValue: any
+      
+      if (sortBy.value === 'release_date') {
+        aValue = new Date(a.releaseDate)
+        bValue = new Date(b.releaseDate)
+      } else if (sortBy.value === 'price') {
+        aValue = Number(a.price)
+        bValue = Number(b.price)
+      } else {
+        return 0
+      }
+      
+      if (sortOrder.value === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
+      }
+    })
   })
 
   // 购物车数据
@@ -263,6 +292,16 @@ export const useGameStore = defineStore('game', () => {
     { immediate: true }
   )
 
+  // 设置排序方式
+  function setSortBy(field: 'release_date' | 'price' | 'default') {
+    sortBy.value = field
+  }
+  
+  // 设置排序顺序
+  function setSortOrder(order: 'asc' | 'desc') {
+    sortOrder.value = order
+  }
+
   return {
     games,
     cartItems,
@@ -282,6 +321,10 @@ export const useGameStore = defineStore('game', () => {
     searchResults,
     isSearching,
     searchQuery,
-    displayGames
+    displayGames,
+    sortBy,
+    sortOrder,
+    setSortBy,
+    setSortOrder
   }
 })
