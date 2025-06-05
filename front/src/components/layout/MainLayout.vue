@@ -165,13 +165,14 @@ export default defineComponent({
 .nav-item {
   color: #c7d5e0;
   text-decoration: none;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: 10px;
   transition: background-color 0.3s;
-  background: none;
+  background: #082538;
   border: none;
   cursor: pointer;
+  font-weight: bold;
 }
 
 .nav-item:hover {
@@ -198,7 +199,7 @@ export default defineComponent({
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1.2rem;
 }
 
 .btn-login {
@@ -238,14 +239,15 @@ export default defineComponent({
   padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1.3rem;
+  font-weight: bold;
 }
 
 .admin-badge {
-  background-color: #b12020;
+  background-color: #db2323c8;
   color: white;
-  font-size: 0.8rem;
-  padding: 0.2rem 0.4rem;
+  font-size: 1.1rem;
+  padding: 0.2rem 0.3rem;
   border-radius: 4px;
   margin-left: 0.5rem;
 }
