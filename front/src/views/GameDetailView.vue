@@ -1,77 +1,87 @@
 <template>
-  <div class="game-detail-container" v-if="game">
-    <div class="game-detail-header">
-      <div class="game-image-large">
-        <img :src="game.imageUrl" :alt="game.title">
-      </div>
-      <div class="game-header-info">
-        <h1 class="game-title">{{ game.title }}</h1>
-        <div class="game-meta">
-          <p class="game-developer">
-            开发商: 
-            <span 
-              @click="navigateToDeveloper" 
-              class="developer-link"
-            >
-              {{ game.developer }}
-            </span>
-          </p>
-          <p class="game-publisher">
-            发行商: 
-            <span 
-              @click="navigateToPublisher" 
-              class="publisher-link"
-            >
-              {{ game.publisher }}
-            </span>
-          </p>
-          <p class="game-release">发行日期: {{ game.releaseDate }}</p>
-          <p class="game-type">类型: {{ game.type }}</p>
-        </div>
-      </div>
-    </div>
+  <div class="game-detail-wrapper" v-if="game">
+    <!-- 背景层 -->
+    <div 
+      class="background-layer"
+      :style="{ backgroundImage: `url(${game.imageUrl})` }"
+    ></div>
+    <div class="background-overlay"></div>
     
-    <div class="game-detail-content">
-      <div class="game-description-section">
-        <h2>游戏简介</h2>
-        <p class="game-description-full">{{ game.description }}</p>
-      </div>
-      
-      <div class="game-purchase-section">
-        <div class="game-price-card">
-          <h3>购买 {{ game.title }}</h3>
-          <p class="game-price">¥{{ formatPrice(game.price) }}</p>
-          <div class="purchase-actions">
-            <button 
-              v-if="!gameStore.isInLibrary(game.id)" 
-              @click="handleAddToCart" 
-              class="btn-add-cart"
-              :disabled="gameStore.isInCart(game.id) || isLoading"
-            >
-              <span v-if="isLoading">添加中...</span>
-              <span v-else>{{ gameStore.isInCart(game.id) ? '已在购物车' : '添加到购物车' }}</span>
-            </button>
-            <button 
-              v-if="gameStore.isInCart(game.id) && !gameStore.isInLibrary(game.id)" 
-              @click="goToCart" 
-              class="btn-go-cart"
-            >
-              前往购物车
-            </button>
-            <button 
-              v-if="gameStore.isInLibrary(game.id)" 
-              @click="launchGame" 
-              class="btn-launch"
-            >
-              启动游戏
-            </button>
+    <!-- 内容层 -->
+    <div class="game-detail-container">
+      <div class="game-detail-header">
+        <div class="game-image-large">
+          <img :src="game.imageUrl" :alt="game.title">
+        </div>
+        <div class="game-header-info">
+          <h1 class="game-title">{{ game.title }}</h1>
+          <div class="game-meta">
+            <p class="game-developer">
+              开发商: 
+              <span 
+                @click="navigateToDeveloper" 
+                class="developer-link"
+              >
+                {{ game.developer }}
+              </span>
+            </p>
+            <p class="game-publisher">
+              发行商: 
+              <span 
+                @click="navigateToPublisher" 
+                class="publisher-link"
+              >
+                {{ game.publisher }}
+              </span>
+            </p>
+            <p class="game-release">发行日期: {{ game.releaseDate }}</p>
+            <p class="game-type">类型: {{ game.type }}</p>
           </div>
         </div>
       </div>
-    </div>
-    
-    <div class="back-to-store">
-      <button @click="goBack" class="btn-back">« {{ backButtonText }}</button>
+      
+      <div class="game-detail-content">
+        <div class="game-description-section">
+          <h2>游戏简介</h2>
+          <p class="game-description-full">{{ game.description }}</p>
+        </div>
+        
+        <div class="game-purchase-section">
+          <div class="game-price-card">
+            <h3>购买 {{ game.title }}</h3>
+            <p class="game-price">¥{{ formatPrice(game.price) }}</p>
+            <div class="purchase-actions">
+              <button 
+                v-if="!gameStore.isInLibrary(game.id)" 
+                @click="handleAddToCart" 
+                class="btn-add-cart"
+                :disabled="gameStore.isInCart(game.id) || isLoading"
+              >
+                <span v-if="isLoading">添加中...</span>
+                <span v-else>{{ gameStore.isInCart(game.id) ? '已在购物车' : '添加到购物车' }}</span>
+              </button>
+              <button 
+                v-if="gameStore.isInCart(game.id) && !gameStore.isInLibrary(game.id)" 
+                @click="goToCart" 
+                class="btn-go-cart"
+              >
+                前往购物车
+              </button>
+              <button 
+                v-if="gameStore.isInLibrary(game.id)" 
+                @click="launchGame" 
+                class="btn-launch"
+              >
+                启动游戏
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="back-to-store">
+        <button @click="goBack" class="btn-back">« {{ backButtonText }}</button>
+      </div>
     </div>
   </div>
   <div v-else class="loading-container">
@@ -163,12 +173,6 @@ export default defineComponent({
           type: game.value.type
         })
         
-        // 可以添加更多的启动逻辑，比如：
-        // - 检查游戏是否已安装
-        // - 启动游戏进程
-        // - 记录游戏启动时间
-        // - 显示启动动画等
-        
         alert(`正在启动 "${game.value.title}"...\n`)
       }
     }
@@ -203,11 +207,49 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.game-detail-wrapper {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.background-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(20px);
+  transform: scale(1.1); /* 略微放大以避免模糊边缘 */
+  z-index: -2;
+}
+
+.background-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7); /* 变暗遮罩 */
+  z-index: -1;
+}
+
 .game-detail-container {
+  position: relative;
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
   color: #c7d5e0;
+  z-index: 1;
+  background: rgba(27, 40, 56, 0.85); /* 半透明背景增强可读性 */
+  border-radius: 12px;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px); /* 额外的背景模糊 */
 }
 
 .game-detail-header {
@@ -223,7 +265,7 @@ export default defineComponent({
 .game-image-large img {
   width: 100%;
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .game-header-info {
@@ -235,6 +277,7 @@ export default defineComponent({
   margin-top: 0;
   margin-bottom: 1rem;
   color: #ffffff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .game-meta {
@@ -244,29 +287,29 @@ export default defineComponent({
 .game-developer, .game-publisher, .game-release, .game-type {
   margin: 0.5rem 0;
   font-size: 1rem;
-  color: #8f98a0;
+  color: #c7d5e0;
 }
 
 .developer-link {
-  color: #5c7e10;
+  color: #7fb800;
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.3s;
 }
 
 .developer-link:hover {
-  color: #6d9619;
+  color: #9ed500;
 }
 
 .publisher-link {
-  color: #5c7e10;
+  color: #7fb800;
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.3s;
 }
 
 .publisher-link:hover {
-  color: #6d9619;
+  color: #9ed500;
 }
 
 .game-detail-content {
@@ -280,31 +323,36 @@ export default defineComponent({
   font-size: 1.5rem;
   margin-bottom: 1rem;
   color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .game-description-full {
   line-height: 1.6;
-  color: #c7d5e0;
+  color: #e8e8e8;
 }
 
 .game-price-card {
-  background-color: #2a475e;
+  background-color: rgba(42, 71, 94, 0.9);
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .game-price-card h3 {
   margin-top: 0;
   font-size: 1.2rem;
   color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .game-price {
   font-size: 1.8rem;
   font-weight: bold;
-  color: #c7d5e0;
+  color: #ffffff;
   margin: 1rem 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .purchase-actions {
@@ -320,7 +368,8 @@ export default defineComponent({
   cursor: pointer;
   font-size: 1rem;
   text-align: center;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .btn-add-cart {
@@ -330,12 +379,15 @@ export default defineComponent({
 
 .btn-add-cart:hover {
   background-color: #6d9619;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .btn-add-cart:disabled {
   background-color: #4a6e0e;
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-go-cart {
@@ -345,6 +397,8 @@ export default defineComponent({
 
 .btn-go-cart:hover {
   background-color: #0b8eee;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .btn-launch {
@@ -354,6 +408,8 @@ export default defineComponent({
 
 .btn-launch:hover {
   background-color: #1e8c3a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .back-to-store {
@@ -361,16 +417,23 @@ export default defineComponent({
 }
 
 .btn-back {
-  color: #c7d5e0;
-  background: none;
-  border: none;
+  color: #e8e8e8;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   font-size: 1rem;
   cursor: pointer;
-  transition: color 0.3s;
+  transition: all 0.3s;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  backdrop-filter: blur(5px);
 }
 
 .btn-back:hover {
   color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .loading-container {
@@ -383,12 +446,21 @@ export default defineComponent({
 }
 
 @media (max-width: 768px) {
+  .game-detail-container {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+  
   .game-detail-header {
     flex-direction: column;
   }
   
   .game-detail-content {
     grid-template-columns: 1fr;
+  }
+  
+  .game-title {
+    font-size: 2rem;
   }
 }
 </style>
