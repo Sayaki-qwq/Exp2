@@ -178,7 +178,6 @@ export default defineComponent({
         gameForm.title = game.title
         gameForm.description = game.description
         gameForm.type = game.type
-        // 确保日期格式正确（YYYY-MM-DD）
         gameForm.release_date = game.releaseDate || ''
         gameForm.price = game.price
         gameForm.developer = game.developer
@@ -233,18 +232,30 @@ export default defineComponent({
           formData.release_date = formData.release_date.split('T')[0]
         }
         
+        // 将前端的字段名转换为后端期望的格式
+        const backendData = {
+          title: formData.title,
+          description: formData.description,
+          type: formData.type,
+          release_date: formData.release_date,
+          price: formData.price,
+          developer: formData.developer,
+          publisher: formData.publisher,
+          image_url: formData.imageUrl  // 将 imageUrl 转换为 image_url
+        }
+        
         if (editingGame.value) {
           // 更新游戏
           await axios.put(
             `http://localhost:5000/api/games/${editingGame.value.id}`,
-            formData,
+            backendData,
             getAxiosConfig()
           )
         } else {
           // 添加新游戏
           await axios.post(
             'http://localhost:5000/api/games',
-            formData,
+            backendData,
             getAxiosConfig()
           )
         }
@@ -284,85 +295,127 @@ export default defineComponent({
 <style scoped>
 .admin-container {
   padding: 2rem;
-  max-width: 1200px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
+h1 {
+  font-size: 2.5rem;
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
 .btn-add {
-  background-color: #4CAF50;
+  background-color: #5c7e10;
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.8rem 1.5rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   margin-bottom: 2rem;
+  font-size: 1.1rem;
+  transition: background-color 0.3s;
+}
+
+.btn-add:hover {
+  background-color: #6d9619;
 }
 
 .games-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 1.5rem;
 }
 
 .game-item {
   background-color: #2a475e;
   border-radius: 8px;
-  padding: 1rem;
+  padding: 1.2rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1.5rem;
 }
 
 .game-info {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  flex-direction: row;
+  gap: 1.5rem;
+  flex: 1;
+  font-size: 1.2rem;
 }
 
 .game-image {
-  width: 120px;
-  height: 70px;
+  width: 160px;
+  height: 90px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
 }
 
 .game-details {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .game-details h3 {
   margin: 0 0 0.5rem 0;
   color: #ffffff;
+  font-size: 1.4rem;
+  line-height: 1.2;
 }
 
 .game-details p {
-  margin: 0.25rem 0;
-  color: #8f98a0;
-  font-size: 0.9rem;
+  margin: 0.2rem 0;
+  color: #c7d5e0;
+  font-size: 1rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .game-actions {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 120px;
+  flex-shrink: 0;
 }
 
 .btn-edit {
-  background-color: #2196F3;
+  background-color: #387198;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: 4px;
   cursor: pointer;
   flex: 1;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.btn-edit:hover {
+  background-color: #4a8db8;
 }
 
 .btn-delete {
-  background-color: #f44336;
+  background-color: #c23b22;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: 4px;
   cursor: pointer;
   flex: 1;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+
+.btn-delete:hover {
+  background-color: #d44332;
 }
 
 .modal {
@@ -371,7 +424,7 @@ export default defineComponent({
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -380,36 +433,53 @@ export default defineComponent({
 
 .modal-content {
   background-color: #1b2838;
-  padding: 2rem;
-  border-radius: 8px;
+  padding: 2.5rem;
+  border-radius: 12px;
   width: 90%;
-  max-width: 600px;
+  max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
 }
 
+.modal-content h2 {
+  font-size: 1.8rem;
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
   color: #c7d5e0;
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
 .form-group input,
 .form-group textarea {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.8rem;
   border: 1px solid #4b5f74;
-  border-radius: 4px;
+  border-radius: 6px;
   background-color: #2a475e;
   color: #c7d5e0;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #5c7e10;
+  outline: none;
 }
 
 .form-group textarea {
-  height: 100px;
+  height: 120px;
   resize: vertical;
 }
 
@@ -420,23 +490,35 @@ export default defineComponent({
 }
 
 .btn-submit {
-  background-color: #4CAF50;
+  background-color: #5c7e10;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
   cursor: pointer;
   flex: 1;
+  font-size: 1.1rem;
+  transition: background-color 0.3s;
+}
+
+.btn-submit:hover {
+  background-color: #6d9619;
 }
 
 .btn-cancel {
-  background-color: #607D8B;
+  background-color: #8f98a0;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
   cursor: pointer;
   flex: 1;
+  font-size: 1.1rem;
+  transition: background-color 0.3s;
+}
+
+.btn-cancel:hover {
+  background-color: #a5b4bb;
 }
 
 .delete-confirm {
@@ -444,7 +526,8 @@ export default defineComponent({
 }
 
 .delete-confirm p {
-  margin: 1rem 0;
+  margin: 1.5rem 0;
   color: #c7d5e0;
+  font-size: 1.1rem;
 }
 </style> 

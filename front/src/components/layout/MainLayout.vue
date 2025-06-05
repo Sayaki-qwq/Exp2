@@ -36,7 +36,7 @@
     </main>
     
     <footer class="footer">
-      <p>&copy; 2023 Game Store - 游戏数据库实验</p>
+      <p>&copy; 2025 Game Store - 游戏数据库实验</p>
     </footer>
     
     <!-- 认证模态框 -->
