@@ -141,7 +141,7 @@ def get_games():
                     ), 0
                 ) as like_percentage
             FROM games g
-            LEFT JOIN game_ratings gr ON g.id = gr.game_id
+            LEFT JOIN game_reviews gr ON g.id = gr.game_id
             GROUP BY g.id, g.title, g.description, g.type, g.release_date, 
                      g.price, g.developer, g.publisher, g.image_url, g.created_at
             ORDER BY g.id
@@ -178,7 +178,7 @@ def search_games():
                     ), 0
                 ) as like_percentage
             FROM games g
-            LEFT JOIN game_ratings gr ON g.id = gr.game_id
+            LEFT JOIN game_reviews gr ON g.id = gr.game_id
             WHERE g.title LIKE CONCAT('%%', %s, '%%')
             GROUP BY g.id, g.title, g.description, g.type, g.release_date, 
                      g.price, g.developer, g.publisher, g.image_url, g.created_at
@@ -443,7 +443,7 @@ def delete_game(current_user_id, game_id):
     except Exception as e:
         return jsonify({'message': f'删除游戏失败: {str(e)}'}), 400
 
-# 游戏评分相关API
+# 游戏评论和评分相关API
 
 # 获取游戏评分统计
 @app.route('/api/games/<int:game_id>/ratings', methods=['GET'])
@@ -455,7 +455,7 @@ def get_game_ratings(game_id):
             SELECT 
                 rating,
                 COUNT(*) as count
-            FROM game_ratings 
+            FROM game_reviews 
             WHERE game_id = %s 
             GROUP BY rating
         ''', (game_id,))
@@ -493,22 +493,129 @@ def get_user_rating(current_user_id, game_id):
     cur = mysql.connection.cursor()
     try:
         cur.execute('''
-            SELECT rating 
-            FROM game_ratings 
+            SELECT rating, comment 
+            FROM game_reviews 
             WHERE user_id = %s AND game_id = %s
         ''', (current_user_id, game_id))
         
         result = cur.fetchone()
         
         return jsonify({
-            'rating': result['rating'] if result else None
+            'rating': result['rating'] if result else None,
+            'comment': result['comment'] if result else None
         })
     except Exception as e:
         return jsonify({'message': f'获取用户评分失败: {str(e)}'}), 400
     finally:
         cur.close()
 
-# 用户对游戏进行评分
+# 获取游戏的所有评论
+@app.route('/api/games/<int:game_id>/reviews', methods=['GET'])
+def get_game_reviews(game_id):
+    cur = mysql.connection.cursor()
+    try:
+        # 检查用户是否拥有该游戏 (只有拥有游戏的用户才能发表评论)
+        cur.execute('''
+            SELECT 
+                gr.id,
+                gr.rating,
+                gr.comment,
+                gr.created_at,
+                gr.updated_at,
+                u.username
+            FROM game_reviews gr
+            JOIN users u ON gr.user_id = u.id
+            JOIN user_library ul ON gr.user_id = ul.user_id AND gr.game_id = ul.game_id
+            WHERE gr.game_id = %s
+            ORDER BY gr.created_at DESC
+        ''', (game_id,))
+        
+        reviews = cur.fetchall()
+        
+        # 格式化时间戳
+        for review in reviews:
+            review['created_at'] = review['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+            review['updated_at'] = review['updated_at'].strftime('%Y-%m-%d %H:%M:%S')
+        
+        return jsonify(reviews)
+    except Exception as e:
+        return jsonify({'message': f'获取评论失败: {str(e)}'}), 400
+    finally:
+        cur.close()
+
+# 用户对游戏进行评论和评分
+@app.route('/api/games/<int:game_id>/reviews', methods=['POST'])
+@token_required
+def add_review(current_user_id, game_id):
+    data = request.get_json()
+    rating = data.get('rating')
+    comment = data.get('comment', '').strip()
+    
+    if rating not in ['like', 'dislike']:
+        return jsonify({'message': '评分必须是 like 或 dislike'}), 400
+    
+    if not comment:
+        return jsonify({'message': '评论内容不能为空'}), 400
+    
+    if len(comment) > 1000:
+        return jsonify({'message': '评论内容不能超过1000字符'}), 400
+    
+    cur = mysql.connection.cursor()
+    try:
+        # 检查游戏是否存在
+        cur.execute('SELECT id FROM games WHERE id = %s', (game_id,))
+        if not cur.fetchone():
+            return jsonify({'message': '游戏不存在'}), 404
+        
+        # 检查用户是否拥有该游戏
+        cur.execute('''
+            SELECT 1 FROM user_library 
+            WHERE user_id = %s AND game_id = %s
+        ''', (current_user_id, game_id))
+        
+        if not cur.fetchone():
+            return jsonify({'message': '只有拥有该游戏的玩家才能发表评论'}), 403
+        
+        # 使用 INSERT ... ON DUPLICATE KEY UPDATE 来处理重复评论
+        cur.execute('''
+            INSERT INTO game_reviews (user_id, game_id, rating, comment) 
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+            rating = VALUES(rating),
+            comment = VALUES(comment),
+            updated_at = CURRENT_TIMESTAMP
+        ''', (current_user_id, game_id, rating, comment))
+        
+        mysql.connection.commit()
+        
+        return jsonify({'message': '评论发表成功', 'rating': rating, 'comment': comment})
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({'message': f'评论发表失败: {str(e)}'}), 400
+    finally:
+        cur.close()
+
+# 删除用户对游戏的评论
+@app.route('/api/games/<int:game_id>/reviews', methods=['DELETE'])
+@token_required
+def delete_review(current_user_id, game_id):
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute('''
+            DELETE FROM game_reviews 
+            WHERE user_id = %s AND game_id = %s
+        ''', (current_user_id, game_id))
+        
+        mysql.connection.commit()
+        
+        return jsonify({'message': '评论已删除'})
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({'message': f'删除评论失败: {str(e)}'}), 400
+    finally:
+        cur.close()
+
+# 保持旧的 rating API 用于兼容性 (重定向到新的 review API)
 @app.route('/api/games/<int:game_id>/ratings', methods=['POST'])
 @token_required
 def rate_game(current_user_id, game_id):
@@ -518,50 +625,21 @@ def rate_game(current_user_id, game_id):
     if rating not in ['like', 'dislike']:
         return jsonify({'message': '评分必须是 like 或 dislike'}), 400
     
-    cur = mysql.connection.cursor()
-    try:
-        # 检查游戏是否存在
-        cur.execute('SELECT id FROM games WHERE id = %s', (game_id,))
-        if not cur.fetchone():
-            return jsonify({'message': '游戏不存在'}), 404
-        
-        # 使用 INSERT ... ON DUPLICATE KEY UPDATE 来处理重复评分
-        cur.execute('''
-            INSERT INTO game_ratings (user_id, game_id, rating) 
-            VALUES (%s, %s, %s)
-            ON DUPLICATE KEY UPDATE 
-            rating = VALUES(rating),
-            updated_at = CURRENT_TIMESTAMP
-        ''', (current_user_id, game_id, rating))
-        
-        mysql.connection.commit()
-        
-        return jsonify({'message': '评分成功', 'rating': rating})
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({'message': f'评分失败: {str(e)}'}), 400
-    finally:
-        cur.close()
+    # 如果只是评分没有评论，创建一个默认评论
+    default_comment = "推荐" if rating == 'like' else "不推荐"
+    
+    # 调用新的评论API
+    from flask import request as flask_request
+    original_json = flask_request.get_json()
+    flask_request._cached_json = {'rating': rating, 'comment': default_comment}
+    
+    return add_review(current_user_id, game_id)
 
-# 删除用户对游戏的评分
+# 删除用户对游戏的评分 (兼容性API)
 @app.route('/api/games/<int:game_id>/ratings', methods=['DELETE'])
 @token_required
 def delete_rating(current_user_id, game_id):
-    cur = mysql.connection.cursor()
-    try:
-        cur.execute('''
-            DELETE FROM game_ratings 
-            WHERE user_id = %s AND game_id = %s
-        ''', (current_user_id, game_id))
-        
-        mysql.connection.commit()
-        
-        return jsonify({'message': '评分已删除'})
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({'message': f'删除评分失败: {str(e)}'}), 400
-    finally:
-        cur.close()
+    return delete_review(current_user_id, game_id)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

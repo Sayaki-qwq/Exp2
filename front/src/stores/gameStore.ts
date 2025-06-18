@@ -33,6 +33,17 @@ export interface GameRating {
 // 定义用户评分接口
 export interface UserRating {
   rating: 'like' | 'dislike' | null
+  comment: string | null
+}
+
+// 定义游戏评论接口
+export interface GameReview {
+  id: number
+  rating: 'like' | 'dislike'
+  comment: string
+  username: string
+  created_at: string
+  updated_at: string
 }
 
 export const useGameStore = defineStore('game', () => {
@@ -378,6 +389,48 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  // 获取游戏的所有评论
+  async function getGameReviews(gameId: number): Promise<GameReview[]> {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/games/${gameId}/reviews`)
+      return response.data
+    } catch (error) {
+      console.error('获取游戏评论失败', error)
+      return []
+    }
+  }
+
+  // 发表评论
+  async function addReview(gameId: number, rating: 'like' | 'dislike', comment: string): Promise<boolean> {
+    if (!userStore.isLoggedIn) {
+      alert('请先登录')
+      return false
+    }
+
+    try {
+      await axios.post(`${apiBaseUrl}/games/${gameId}/reviews`, { rating, comment })
+      return true
+    } catch (error: any) {
+      console.error('发表评论失败', error)
+      const message = error.response?.data?.message || '发表评论失败'
+      alert(message)
+      return false
+    }
+  }
+
+  // 删除评论
+  async function deleteReview(gameId: number): Promise<boolean> {
+    if (!userStore.isLoggedIn) return false
+
+    try {
+      await axios.delete(`${apiBaseUrl}/games/${gameId}/reviews`)
+      return true
+    } catch (error) {
+      console.error('删除评论失败', error)
+      return false
+    }
+  }
+
   return {
     games,
     cartItems,
@@ -406,6 +459,10 @@ export const useGameStore = defineStore('game', () => {
     getGameRatings,
     getUserRating,
     rateGame,
-    deleteRating
+    deleteRating,
+    // 评论功能
+    getGameReviews,
+    addReview,
+    deleteReview
   }
 })
