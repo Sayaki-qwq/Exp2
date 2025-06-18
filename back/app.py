@@ -163,14 +163,14 @@ def search_games():
     
     cur = mysql.connection.cursor()
     try:
-        # 仅根据游戏标题进行模糊搜索，支持中文
+        # 仅根据游戏标题进行模糊搜索，支持英文
         query = '''
             SELECT 
                 id, title, description, type, 
-                DATE_FORMAT(release_date, '%Y-%m-%d') as release_date,
+                DATE_FORMAT(release_date, '%%Y-%%m-%%d') as release_date,
                 price, developer, publisher, image_url, created_at 
             FROM games 
-            WHERE title LIKE CONCAT('%', %s, '%')
+            WHERE title LIKE CONCAT('%%', %s, '%%')
             ORDER BY title
         '''
         cur.execute(query, (search_term,))

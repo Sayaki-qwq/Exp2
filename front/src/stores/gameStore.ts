@@ -36,7 +36,7 @@ export const useGameStore = defineStore('game', () => {
   // 排序相关状态
   const sortBy = ref<'release_date' | 'price' | 'default'>('default')
   const sortOrder = ref<'asc' | 'desc'>('desc') // 默认降序
-
+  
   // 加载游戏列表
   async function loadGames() {
     try {
@@ -200,7 +200,7 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
 
-    try {
+      try {
       await axios.post(`${apiBaseUrl}/cart/add`, { 
         gameId: game.id
       })
@@ -208,8 +208,8 @@ export const useGameStore = defineStore('game', () => {
       // 重新加载购物车
       await loadUserCart()
       return true
-    } catch (error) {
-      console.error('添加到购物车失败', error)
+      } catch (error) {
+        console.error('添加到购物车失败', error)
       return false
     }
   }
@@ -217,13 +217,13 @@ export const useGameStore = defineStore('game', () => {
   // 从购物车移除游戏
   async function removeFromCart(gameId: number) {
     if (!userStore.isLoggedIn) return
-
-    try {
-      await axios.delete(`${apiBaseUrl}/cart/remove/${gameId}`)
+      
+        try {
+          await axios.delete(`${apiBaseUrl}/cart/remove/${gameId}`)
       // 重新加载购物车
       await loadUserCart()
-    } catch (error) {
-      console.error('从购物车移除失败', error)
+        } catch (error) {
+          console.error('从购物车移除失败', error)
     }
   }
 

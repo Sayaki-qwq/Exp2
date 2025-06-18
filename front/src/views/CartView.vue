@@ -75,7 +75,7 @@ export default defineComponent({
         const success = await gameStore.purchaseGames()
         if (success) {
           router.push('/library')
-        }
+      }
       } catch (error) {
         console.error('结算失败', error)
       }
