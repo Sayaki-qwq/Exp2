@@ -42,6 +42,7 @@
             <option value="default">默认</option>
             <option value="release_date">发行日期</option>
             <option value="price">价格</option>
+            <option value="like_percentage">好评率</option>
           </select>
           
           <label class="sort-label order-label">排序：</label>
@@ -79,6 +80,12 @@
           <p class="game-developer">开发商: {{ game.developer }}</p>
           <p class="game-publisher">发行商: {{ game.publisher }}</p>
           <p class="game-release">发行日期: {{ game.releaseDate }}</p>
+          <div class="game-rating">
+            <span class="rating-label">好评率:</span>
+            <span class="rating-percentage" :class="{ 'no-rating': game.likePercentage === 0 }">
+              {{ game.likePercentage === 0 ? '暂无评价' : `${game.likePercentage}%` }}
+            </span>
+          </div>
           <p class="game-description">{{ game.description }}</p>
           <div class="game-price-actions">
             <p class="game-price">¥{{ formatPrice(game.price) }}</p>
@@ -211,6 +218,8 @@ export default defineComponent({
         return order === 'desc' ? '最新' : '最早'
       } else if (sortBy === 'price') {
         return order === 'desc' ? '降序' : '升序'
+      } else if (sortBy === 'like_percentage') {
+        return order === 'desc' ? '高到低' : '低到高'
       }
       return '默认'
     }
@@ -440,11 +449,39 @@ export default defineComponent({
   color: #ffffff;
 }
 
-.game-type, .game-developer, .game-publisher, .game-release {
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
-  color: #8f98a0;
-}
+ .game-type, .game-developer, .game-publisher, .game-release {
+   margin: 0.5rem 0;
+   font-size: 0.9rem;
+   color: #8f98a0;
+ }
+ 
+ .game-rating {
+   margin: 0.5rem 0;
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+ }
+ 
+ .rating-label {
+   font-size: 0.9rem;
+   color: #8f98a0;
+ }
+ 
+ .rating-percentage {
+   font-size: 0.9rem;
+   font-weight: 600;
+   color: #90d000;
+   background-color: rgba(144, 208, 0, 0.15);
+   padding: 0.2rem 0.5rem;
+   border-radius: 4px;
+   border: 1px solid rgba(144, 208, 0, 0.3);
+ }
+ 
+ .rating-percentage.no-rating {
+   color: #8f98a0;
+   background-color: rgba(143, 152, 160, 0.15);
+   border-color: rgba(143, 152, 160, 0.3);
+ }
 
 .game-description {
   font-size: 0.9rem;

@@ -24,20 +24,6 @@ app.config['SECRET_KEY'] = secrets.token_hex(32)
 
 mysql = MySQL(app)
 
-# @app.route('/')
-# def check_connection():
-#     try:
-#         conn = mysql.connection  # 尝试获取连接
-#         cursor = conn.cursor()
-#         cursor.execute("SELECT 1")  # 执行简单查询测试
-#         cursor.close()
-#         return "✅ MySQL 连接成功！"
-#     except pymysql.MySQLError as e:
-#         return f"❌ MySQL 连接失败: {str(e)}"
-#     except Exception as e:
-#         return f"❌ 发生错误: {str(e)}"
-
-# JWT验证装饰器
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -140,18 +126,33 @@ def login():
 @app.route('/api/games', methods=['GET'])
 def get_games():
     cur = mysql.connection.cursor()
-    # 使用单引号包裹 MySQL 日期格式
-    query = '''
-        SELECT 
-            id, title, description, type, 
-            DATE_FORMAT(release_date, '%Y-%m-%d') as release_date,
-            price, developer, publisher, image_url, created_at 
-        FROM games
-    '''
-    cur.execute(query)
-    games = cur.fetchall()
-    cur.close()
-    return jsonify(games)
+    try:
+        # 获取游戏基本信息和好评率
+        query = '''
+            SELECT 
+                g.id, g.title, g.description, g.type, 
+                DATE_FORMAT(g.release_date, '%Y-%m-%d') as release_date,
+                g.price, g.developer, g.publisher, g.image_url, g.created_at,
+                COALESCE(
+                    ROUND(
+                        (SUM(CASE WHEN gr.rating = 'like' THEN 1 ELSE 0 END) * 100.0 / 
+                         NULLIF(COUNT(gr.rating), 0)
+                        ), 1
+                    ), 0
+                ) as like_percentage
+            FROM games g
+            LEFT JOIN game_ratings gr ON g.id = gr.game_id
+            GROUP BY g.id, g.title, g.description, g.type, g.release_date, 
+                     g.price, g.developer, g.publisher, g.image_url, g.created_at
+            ORDER BY g.id
+        '''
+        cur.execute(query)
+        games = cur.fetchall()
+        return jsonify(games)
+    except Exception as e:
+        return jsonify({'message': f'获取游戏列表失败: {str(e)}'}), 400
+    finally:
+        cur.close()
 
 # 搜索游戏
 @app.route('/api/games/search', methods=['GET'])
@@ -163,23 +164,33 @@ def search_games():
     
     cur = mysql.connection.cursor()
     try:
-        # 仅根据游戏标题进行模糊搜索，支持英文
+        # 搜索游戏并包含好评率信息
         query = '''
             SELECT 
-                id, title, description, type, 
-                DATE_FORMAT(release_date, '%%Y-%%m-%%d') as release_date,
-                price, developer, publisher, image_url, created_at 
-            FROM games 
-            WHERE title LIKE CONCAT('%%', %s, '%%')
-            ORDER BY title
+                g.id, g.title, g.description, g.type, 
+                DATE_FORMAT(g.release_date, '%%Y-%%m-%%d') as release_date,
+                g.price, g.developer, g.publisher, g.image_url, g.created_at,
+                COALESCE(
+                    ROUND(
+                        (SUM(CASE WHEN gr.rating = 'like' THEN 1 ELSE 0 END) * 100.0 / 
+                         NULLIF(COUNT(gr.rating), 0)
+                        ), 1
+                    ), 0
+                ) as like_percentage
+            FROM games g
+            LEFT JOIN game_ratings gr ON g.id = gr.game_id
+            WHERE g.title LIKE CONCAT('%%', %s, '%%')
+            GROUP BY g.id, g.title, g.description, g.type, g.release_date, 
+                     g.price, g.developer, g.publisher, g.image_url, g.created_at
+            ORDER BY g.title
         '''
         cur.execute(query, (search_term,))
         games = cur.fetchall()
-        cur.close()
         return jsonify(games)
     except Exception as e:
-        cur.close()
         return jsonify({'message': f'搜索失败: {str(e)}'}), 400
+    finally:
+        cur.close()
 
 # 获取用户购物车
 @app.route('/api/cart', methods=['GET'])

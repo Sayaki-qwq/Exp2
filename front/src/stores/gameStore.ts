@@ -4,17 +4,18 @@ import axios from 'axios'
 import { useUserStore } from './userStore'
 
 // 定义游戏类型接口
-export interface Game {
-  id: number
-  title: string
-  description: string
-  type: string
-  releaseDate: string
-  price: number
-  developer: string
-  publisher: string
-  imageUrl: string
-}
+  export interface Game {
+    id: number
+    title: string
+    description: string
+    type: string
+    releaseDate: string
+    price: number
+    developer: string
+    publisher: string
+    imageUrl: string
+    likePercentage?: number
+  }
 
 // 定义购物车中的游戏项
 export interface CartItem {
@@ -47,7 +48,7 @@ export const useGameStore = defineStore('game', () => {
   const searchQuery = ref('')
 
   // 排序相关状态
-  const sortBy = ref<'release_date' | 'price' | 'default'>('default')
+  const sortBy = ref<'release_date' | 'price' | 'like_percentage' | 'default'>('default')
   const sortOrder = ref<'asc' | 'desc'>('desc') // 默认降序
   
   // 加载游戏列表
@@ -63,7 +64,8 @@ export const useGameStore = defineStore('game', () => {
         price: game.price,
         developer: game.developer,
         publisher: game.publisher,
-        imageUrl: game.image_url
+        imageUrl: game.image_url,
+        likePercentage: game.like_percentage || 0,
       }))
     } catch (error) {
       console.error('加载游戏列表失败', error)
@@ -95,7 +97,8 @@ export const useGameStore = defineStore('game', () => {
         price: game.price,
         developer: game.developer,
         publisher: game.publisher,
-        imageUrl: game.image_url
+        imageUrl: game.image_url,
+        likePercentage: game.like_percentage || 0,
       }))
     } catch (error) {
       console.error('搜索游戏失败', error)
@@ -130,6 +133,9 @@ export const useGameStore = defineStore('game', () => {
       } else if (sortBy.value === 'price') {
         aValue = Number(a.price)
         bValue = Number(b.price)
+      } else if (sortBy.value === 'like_percentage') {
+        aValue = Number(a.likePercentage || 0)
+        bValue = Number(b.likePercentage || 0)
       } else {
         return 0
       }
@@ -176,7 +182,8 @@ export const useGameStore = defineStore('game', () => {
           price: item.price,
           developer: item.developer,
           publisher: item.publisher,
-          imageUrl: item.image_url
+          imageUrl: item.image_url,
+          likePercentage: item.like_percentage || 0,
         }
       }))
     } catch (error) {
@@ -199,7 +206,8 @@ export const useGameStore = defineStore('game', () => {
         price: game.price,
         developer: game.developer,
         publisher: game.publisher,
-        imageUrl: game.image_url
+        imageUrl: game.image_url,
+        likePercentage: game.like_percentage || 0,
       }))
     } catch (error) {
       console.error('加载游戏库失败', error)
@@ -306,7 +314,7 @@ export const useGameStore = defineStore('game', () => {
   )
 
   // 设置排序方式
-  function setSortBy(field: 'release_date' | 'price' | 'default') {
+  function setSortBy(field: 'release_date' | 'price' | 'like_percentage' | 'default') {
     sortBy.value = field
   }
   

@@ -104,14 +104,20 @@ export default defineComponent({
       // 登录成功后加载用户数据
       gameStore.loadUserCart()
       gameStore.loadUserLibrary()
+      // 强制跳转到主页面
+      router.push('/store')
     }
     
     const handleRegisterSuccess = () => {
       // 注册成功的处理
+      // 强制跳转到主页面
+      router.push('/store')
     }
     
     const handleLogout = () => {
       userStore.logout()
+      // 强制跳转到主页面
+      router.push('/store')
     }
     
     return {

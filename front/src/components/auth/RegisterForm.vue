@@ -110,8 +110,6 @@ export default defineComponent({
       )
       
       if (success) {
-        emit('register-success')
-        // 注册成功后自动切换到登录
         emit('switch-to-login')
       }
     }

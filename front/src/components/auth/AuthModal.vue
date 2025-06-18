@@ -49,7 +49,6 @@ export default defineComponent({
     
     const handleRegisterSuccess = () => {
       emit('register-success')
-      // 不关闭模态框，让用户可以直接登录
     }
     
     return {
