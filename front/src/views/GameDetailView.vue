@@ -76,6 +76,60 @@
               </button>
             </div>
           </div>
+          
+          <!-- 评分区域 -->
+          <div class="game-rating-card">
+            <h3>用户评价</h3>
+            <div v-if="gameRatings" class="rating-stats">
+              <div class="rating-percentage">
+                <span class="percentage">{{ gameRatings.like_percentage }}%</span>
+                <span class="percentage-label">好评率</span>
+              </div>
+              <div class="rating-counts">
+                <span class="rating-count">
+                  👍 {{ gameRatings.like_count }} 个好评
+                </span>
+                <span class="rating-count">
+                  👎 {{ gameRatings.dislike_count }} 个差评
+                </span>
+                <span class="total-count">
+                  总计 {{ gameRatings.total_count }} 个评价
+                </span>
+              </div>
+            </div>
+            <div v-else class="no-ratings">
+              <p>暂无评价</p>
+            </div>
+            
+            <!-- 用户评分按钮 -->
+            <div class="user-rating-actions">
+              <h4>您的评价</h4>
+              <div class="rating-buttons">
+                <button 
+                  @click="handleRating('like')"
+                  :class="['btn-rating', 'btn-like', { active: userRating?.rating === 'like' }]"
+                  :disabled="ratingLoading"
+                >
+                  👍 喜欢
+                </button>
+                <button 
+                  @click="handleRating('dislike')"
+                  :class="['btn-rating', 'btn-dislike', { active: userRating?.rating === 'dislike' }]"
+                  :disabled="ratingLoading"
+                >
+                  👎 不喜欢
+                </button>
+                <button 
+                  v-if="userRating?.rating"
+                  @click="handleDeleteRating"
+                  class="btn-rating btn-clear"
+                  :disabled="ratingLoading"
+                >
+                  清除评价
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -93,7 +147,8 @@
 import { defineComponent, ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
-import type { Game } from '@/stores/gameStore'
+import { useUserStore } from '@/stores/userStore'
+import type { Game, GameRating, UserRating } from '@/stores/gameStore'
 import { formatPrice } from '@/utils/formatters'
 
 export default defineComponent({
@@ -102,12 +157,24 @@ export default defineComponent({
     const route = useRoute()
     const router = useRouter()
     const gameStore = useGameStore()
+    const userStore = useUserStore()
+    
+    // 评分相关的响应式数据
+    const gameRatings = ref<GameRating | null>(null)
+    const userRating = ref<UserRating | null>(null)
+    const ratingLoading = ref(false)
     
     // 确保在组件挂载时加载所有必要的数据
     onMounted(async () => {
       await gameStore.loadGames()
       if (gameStore.libraryGames.length === 0) {
         await gameStore.loadUserLibrary()
+      }
+      
+      // 加载评分数据
+      const gameId = Number(route.params.id)
+      if (gameId) {
+        await loadRatingData(gameId)
       }
     })
     
@@ -189,6 +256,51 @@ export default defineComponent({
       }
     }
     
+    // 评分相关方法
+    const loadRatingData = async (gameId: number) => {
+      try {
+        // 加载游戏评分统计
+        gameRatings.value = await gameStore.getGameRatings(gameId)
+        
+        // 加载用户评分
+        if (userStore.isLoggedIn) {
+          userRating.value = await gameStore.getUserRating(gameId)
+        }
+      } catch (error) {
+        console.error('加载评分数据失败', error)
+      }
+    }
+    
+    const handleRating = async (rating: 'like' | 'dislike') => {
+      if (!game.value) return
+      
+      ratingLoading.value = true
+      try {
+        const success = await gameStore.rateGame(game.value.id, rating)
+        if (success) {
+          // 重新加载评分数据
+          await loadRatingData(game.value.id)
+        }
+      } finally {
+        ratingLoading.value = false
+      }
+    }
+    
+    const handleDeleteRating = async () => {
+      if (!game.value) return
+      
+      ratingLoading.value = true
+      try {
+        const success = await gameStore.deleteRating(game.value.id)
+        if (success) {
+          // 重新加载评分数据
+          await loadRatingData(game.value.id)
+        }
+      } finally {
+        ratingLoading.value = false
+      }
+    }
+    
     return {
       game,
       gameStore,
@@ -200,7 +312,13 @@ export default defineComponent({
       launchGame,
       formatPrice,
       navigateToDeveloper,
-      navigateToPublisher
+      navigateToPublisher,
+      // 评分相关
+      gameRatings,
+      userRating,
+      ratingLoading,
+      handleRating,
+      handleDeleteRating
     }
   }
 })
@@ -241,9 +359,9 @@ export default defineComponent({
 
 .game-detail-container {
   position: relative;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2.5rem;
   color: #c7d5e0;
   z-index: 2;
   background: rgba(27, 40, 56, 0.85);
@@ -256,18 +374,23 @@ export default defineComponent({
 
 .game-detail-header {
   display: flex;
-  gap: 2rem;
-  margin-bottom: 2rem;
+  gap: 2.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .game-image-large {
-  flex: 0 0 40%;
+  flex: 0 0 50%;
 }
 
 .game-image-large img {
   width: 100%;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.6);
+  transition: transform 0.3s ease;
+}
+
+.game-image-large img:hover {
+  transform: scale(1.02);
 }
 
 .game-header-info {
@@ -287,8 +410,9 @@ export default defineComponent({
 }
 
 .game-developer, .game-publisher, .game-release, .game-type {
-  margin: 0.5rem 0;
-  font-size: 1rem;
+  margin: 0.75rem 0;
+  font-size: 1.5rem;
+  font-weight: 500;
   color: #f0f0f0;
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
 }
@@ -299,6 +423,7 @@ export default defineComponent({
   text-decoration: underline;
   transition: color 0.3s;
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+  font-weight: 600;
 }
 
 .developer-link:hover {
@@ -311,6 +436,7 @@ export default defineComponent({
   text-decoration: underline;
   transition: color 0.3s;
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+  font-weight: 600;
 }
 
 .publisher-link:hover {
@@ -320,19 +446,20 @@ export default defineComponent({
 .game-detail-content {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
+  gap: 2.5rem;
+  margin-bottom: 2.5rem;
 }
 
 .game-description-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  margin-bottom: 1.2rem;
   color: #ffffff;
   text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 .game-description-full {
-  line-height: 1.6;
+  font-size: 1.5rem;
+  line-height: 1.7;
   color: #f5f5f5;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
 }
@@ -344,6 +471,140 @@ export default defineComponent({
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.game-rating-card {
+  background-color: rgba(42, 71, 94, 0.9);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.game-rating-card h3 {
+  color: #ffffff;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.rating-stats {
+  margin-bottom: 1.5rem;
+}
+
+.rating-percentage {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.percentage {
+  display: block;
+  font-size: 3rem;
+  font-weight: bold;
+  color: #5c7e10;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6);
+  line-height: 1;
+}
+
+.percentage-label {
+  display: block;
+  color: #c7d5e0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+.rating-counts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.rating-count, .total-count {
+  color: #c7d5e0;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.total-count {
+  color: #8f98a0;
+  font-style: italic;
+  font-size: 1.2rem;
+  margin-top: 0.5rem;
+}
+
+.no-ratings {
+  text-align: center;
+  color: #8f98a0;
+  margin-bottom: 1.5rem;
+}
+
+.user-rating-actions h4 {
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.rating-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-rating {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s;
+  min-width: 80px;
+}
+
+.btn-like {
+  background-color: #5c7e10;
+  color: white;
+}
+
+.btn-like:hover:not(:disabled) {
+  background-color: #6d9619;
+}
+
+.btn-like.active {
+  background-color: #7ab300;
+  box-shadow: 0 0 10px rgba(122, 179, 0, 0.5);
+}
+
+.btn-dislike {
+  background-color: #c23b22;
+  color: white;
+}
+
+.btn-dislike:hover:not(:disabled) {
+  background-color: #d44726;
+}
+
+.btn-dislike.active {
+  background-color: #e74c3c;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+}
+
+.btn-clear {
+  background-color: #8f98a0;
+  color: white;
+}
+
+.btn-clear:hover:not(:disabled) {
+  background-color: #7a8794;
+}
+
+.btn-rating:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .game-price-card h3 {

@@ -311,12 +311,19 @@ export default defineComponent({
 
 .search-status {
   text-align: center;
-  color: #8f98a0;
-  font-size: 0.9rem;
+  color: #c7d5e0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: rgba(42, 71, 94, 0.3);
+  border-radius: 6px;
 }
 
 .search-status p {
   margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* 排序区域样式 */

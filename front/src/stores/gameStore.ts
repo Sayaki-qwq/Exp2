@@ -21,6 +21,19 @@ export interface CartItem {
   game: Game
 }
 
+// 定义游戏评分接口
+export interface GameRating {
+  like_count: number
+  dislike_count: number
+  total_count: number
+  like_percentage: number
+}
+
+// 定义用户评分接口
+export interface UserRating {
+  rating: 'like' | 'dislike' | null
+}
+
 export const useGameStore = defineStore('game', () => {
   const userStore = useUserStore()
   const apiBaseUrl = 'http://localhost:5000/api'
@@ -302,6 +315,61 @@ export const useGameStore = defineStore('game', () => {
     sortOrder.value = order
   }
 
+  // 评分相关功能
+  
+  // 获取游戏评分统计
+  async function getGameRatings(gameId: number): Promise<GameRating | null> {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/games/${gameId}/ratings`)
+      return response.data
+    } catch (error) {
+      console.error('获取游戏评分失败', error)
+      return null
+    }
+  }
+
+  // 获取用户对游戏的评分
+  async function getUserRating(gameId: number): Promise<UserRating | null> {
+    if (!userStore.isLoggedIn) return null
+    
+    try {
+      const response = await axios.get(`${apiBaseUrl}/games/${gameId}/ratings/user`)
+      return response.data
+    } catch (error) {
+      console.error('获取用户评分失败', error)
+      return null
+    }
+  }
+
+  // 用户对游戏进行评分
+  async function rateGame(gameId: number, rating: 'like' | 'dislike'): Promise<boolean> {
+    if (!userStore.isLoggedIn) {
+      alert('请先登录')
+      return false
+    }
+
+    try {
+      await axios.post(`${apiBaseUrl}/games/${gameId}/ratings`, { rating })
+      return true
+    } catch (error) {
+      console.error('评分失败', error)
+      return false
+    }
+  }
+
+  // 删除用户对游戏的评分
+  async function deleteRating(gameId: number): Promise<boolean> {
+    if (!userStore.isLoggedIn) return false
+
+    try {
+      await axios.delete(`${apiBaseUrl}/games/${gameId}/ratings`)
+      return true
+    } catch (error) {
+      console.error('删除评分失败', error)
+      return false
+    }
+  }
+
   return {
     games,
     cartItems,
@@ -325,6 +393,11 @@ export const useGameStore = defineStore('game', () => {
     sortBy,
     sortOrder,
     setSortBy,
-    setSortOrder
+    setSortOrder,
+    // 评分功能
+    getGameRatings,
+    getUserRating,
+    rateGame,
+    deleteRating
   }
 })

@@ -98,6 +98,7 @@ export default defineComponent({
 .empty-cart {
   text-align: center;
   margin-top: 3rem;
+  font-size: 1.5rem;
 }
 
 .btn-continue-shopping {
@@ -109,6 +110,7 @@ export default defineComponent({
   border-radius: 4px;
   margin-top: 1rem;
   transition: background-color 0.3s;
+  font-size: 1.3rem;
 }
 
 .btn-continue-shopping:hover {
